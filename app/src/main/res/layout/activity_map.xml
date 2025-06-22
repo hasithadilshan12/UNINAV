@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MapActivity">
+
+    <!-- Google Map Fragment -->
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Search Bar at the top -->
+    <LinearLayout
+        android:id="@+id/searchBarContainer"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/search_background"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_search"
+            app:tint="#888888"
+            android:layout_marginStart="16dp"
+            android:contentDescription="Search icon" />
+
+        <TextView
+            android:id="@+id/tvSearchHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Search locations on campus..."
+            android:textColor="#888888"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+    </LinearLayout>
+
+    <!--Re-center Button -->
+    <ImageView
+        android:id="@+id/btnReCenter"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_above="@+id/bottomNavigationView"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/fab_background"
+        android:src="@drawable/ic_my_location"
+        android:elevation="8dp"
+        app:tint="#1565C0"
+        android:contentDescription="Re-center map on current location"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="16dp"
+        android:visibility="visible"/>
+
+    <!-- Bottom Navigation -->
+    <LinearLayout
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="48dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:background="@drawable/bottom_nav_background"
+        android:gravity="center">
+
+        <LinearLayout
+            android:id="@+id/navHome"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_home"
+                app:tint="#FFFFFF"
+                android:contentDescription="Home" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Home"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navSearch"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_search"
+                app:tint="#FFFFFF"
+                android:contentDescription="Search" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Search"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navMap"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_map"
+                app:tint="#FFD700"
+                android:contentDescription="Map" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Map"
+                android:textColor="#FFD700"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navProfile"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_profile"
+                app:tint="#FFFFFF"
+                android:contentDescription="Profile" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Profile"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+</RelativeLayout>
+
+
+
+
+

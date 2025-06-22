@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "59143103934",
+    "project_id": "uninav-9cff2",
+    "storage_bucket": "uninav-9cff2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:59143103934:android:6f55a947e23d82440a45ef",
+        "android_client_info": {
+          "package_name": "com.s92077274.uninav"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDapDL-euEYLqBgzJyyWlwkVCqbCh-94eg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

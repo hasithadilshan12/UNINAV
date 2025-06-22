@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/card_background"
+    android:padding="12dp"
+    android:elevation="4dp">
+
+    <TextView
+        android:id="@+id/tvInfoWindowTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Location Title" />
+
+    <TextView
+        android:id="@+id/tvInfoWindowSnippet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="Location Description" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/btnDirections"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:text="Directions"
+            android:textSize="12sp"
+            android:background="@drawable/button_outline"
+            android:textColor="#1565C0"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btnStartNav"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:text="Start"
+            android:textSize="12sp"
+            android:background="@drawable/button_background"
+            android:textColor="#FFFFFF"
+            android:layout_marginStart="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+    </LinearLayout>
+
+</LinearLayout>

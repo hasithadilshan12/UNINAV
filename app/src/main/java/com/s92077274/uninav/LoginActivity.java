@@ -32,16 +32,14 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-
         mAuth = FirebaseAuth.getInstance();
 
-
         initViews();
-
 
         setClickListeners();
     }
 
+    // Initialize UI components
     private void initViews() {
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
@@ -51,6 +49,7 @@ public class LoginActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
     }
 
+    // Set up click listeners for buttons
     private void setClickListeners() {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -62,7 +61,7 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                // Navigate to Forgot Password screen
                 Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
                 startActivity(intent);
             }
@@ -71,18 +70,19 @@ public class LoginActivity extends AppCompatActivity {
         tvRegister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                // Navigate to Registration screen
                 Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
                 startActivity(intent);
             }
         });
     }
 
+    // Handles user login
     private void loginUser() {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-
+        // Validate input fields
         if (TextUtils.isEmpty(email)) {
             etEmail.setError("Email is required");
             etEmail.requestFocus();
@@ -101,30 +101,31 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-
+        // Show progress bar and disable button
         progressBar.setVisibility(View.VISIBLE);
         btnLogin.setEnabled(false);
 
-
+        // Authenticate user with Firebase
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
+                        // Hide progress bar and enable button
                         progressBar.setVisibility(View.GONE);
                         btnLogin.setEnabled(true);
 
                         if (task.isSuccessful()) {
-
+                            // Login successful
                             FirebaseUser user = mAuth.getCurrentUser();
                             Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-
+                            // Navigate to HomeActivity and clear back stack
                             Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
                             finish();
                         } else {
-
+                            // Login failed
                             Toast.makeText(LoginActivity.this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     }
@@ -134,23 +135,23 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        // Check if user is already logged in
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
+            // Reload user to ensure token validity
             currentUser.reload().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     if (mAuth.getCurrentUser() != null) {
-
+                        // User is authenticated, navigate to HomeActivity
                         Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                         startActivity(intent);
                         finish();
                     }
                 } else {
-
+                    // Token invalid or user deleted, sign out
                     mAuth.signOut();
                 }
             });
         }
     }
 }
-
-

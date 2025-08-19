@@ -13,7 +13,7 @@ import java.util.List;
 
 public class RecentSearchesAdapter extends RecyclerView.Adapter<RecentSearchesAdapter.ViewHolder> {
 
-
+    // Interface for click events on recent search items
     public interface OnRecentSearchClickListener {
         void onRecentSearchClick(MapPoint location);
     }
@@ -21,6 +21,7 @@ public class RecentSearchesAdapter extends RecyclerView.Adapter<RecentSearchesAd
     private List<MapPoint> recentLocationList;
     private OnRecentSearchClickListener listener;
 
+    // Constructor to initialize the adapter
     public RecentSearchesAdapter(List<MapPoint> recentLocationList, OnRecentSearchClickListener listener) {
         this.recentLocationList = recentLocationList;
         this.listener = listener;
@@ -28,6 +29,7 @@ public class RecentSearchesAdapter extends RecyclerView.Adapter<RecentSearchesAd
 
     @NonNull
     @Override
+    // Creates new ViewHolder instances (invoked by the layout manager)
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_recent_search, parent, false);
@@ -35,6 +37,7 @@ public class RecentSearchesAdapter extends RecyclerView.Adapter<RecentSearchesAd
     }
 
     @Override
+    // Binds data to the ViewHolder (invoked by the layout manager)
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MapPoint location = recentLocationList.get(position);
         holder.tvRecentLocationName.setText(location.name);
@@ -46,24 +49,24 @@ public class RecentSearchesAdapter extends RecyclerView.Adapter<RecentSearchesAd
     }
 
     @Override
+    // Returns the total number of items in the data set
     public int getItemCount() {
         return recentLocationList.size();
     }
 
-
+    // Updates the data in the adapter and refreshes the RecyclerView
     public void updateData(List<MapPoint> newLocationList) {
         this.recentLocationList = newLocationList;
         notifyDataSetChanged();
     }
 
+    // ViewHolder class to hold references to the UI components for each item
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvRecentLocationName;
-
 
         public ViewHolder(View itemView) {
             super(itemView);
             tvRecentLocationName = itemView.findViewById(R.id.tvRecentLocationName);
-
         }
     }
 }

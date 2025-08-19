@@ -40,17 +40,15 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-
         initViews();
-
 
         setClickListeners();
     }
 
+    // Initialize UI components
     private void initViews() {
         etRegisterName = findViewById(R.id.etRegisterName);
         etRegisterEmail = findViewById(R.id.etRegisterEmail);
@@ -60,6 +58,7 @@ public class RegisterActivity extends AppCompatActivity {
         tvLogin = findViewById(R.id.tvLogin);
     }
 
+    // Set up click listeners for buttons
     private void setClickListeners() {
         btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +66,6 @@ public class RegisterActivity extends AppCompatActivity {
                 registerUser();
             }
         });
-
 
         if (tvLogin != null) {
             tvLogin.setOnClickListener(v -> {
@@ -79,12 +77,13 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
+    // Handles user registration
     private void registerUser() {
         String name = etRegisterName.getText().toString().trim();
         String email = etRegisterEmail.getText().toString().trim();
         String password = etRegisterPassword.getText().toString().trim();
 
-
+        // Validate input fields
         if (TextUtils.isEmpty(name)) {
             etRegisterName.setError("Name is required");
             etRegisterName.requestFocus();
@@ -115,24 +114,24 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-
+        // Show progress bar and disable button
         progressBarRegister.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
 
-
+        // Create user with email and password in Firebase Authentication
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-
+                            // Registration successful
                             FirebaseUser user = mAuth.getCurrentUser();
                             if (user != null) {
-
+                                // Save user details to Firestore
                                 saveUserToFirestore(user.getUid(), email, name);
                             }
                         } else {
-
+                            // Registration failed
                             progressBarRegister.setVisibility(View.GONE);
                             btnRegister.setEnabled(true);
                             Toast.makeText(RegisterActivity.this,
@@ -143,24 +142,22 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-
+    // Saves user data to Firestore
     private void saveUserToFirestore(String userId, String email, String name) {
-
         Map<String, Object> user = new HashMap<>();
         user.put("email", email);
         user.put("name", name);
         user.put("userId", userId);
         user.put("registrationDate", System.currentTimeMillis());
         user.put("isActive", true);
-        user.put("profilePictureUrl", "");
-
+        user.put("profilePictureBase64", ""); // Initialize with empty string for profile picture
 
         db.collection("users").document(userId)
                 .set(user)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-
+                        // User data saved successfully, sign out and navigate to login
                         mAuth.signOut();
 
                         progressBarRegister.setVisibility(View.GONE);
@@ -169,7 +166,6 @@ public class RegisterActivity extends AppCompatActivity {
                         Toast.makeText(RegisterActivity.this,
                                 "Registration successful! Please log in.",
                                 Toast.LENGTH_LONG).show();
-
 
                         Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -180,7 +176,7 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-
+                        // Error saving user data, sign out and show error
                         mAuth.signOut();
                         progressBarRegister.setVisibility(View.GONE);
                         btnRegister.setEnabled(true);
@@ -195,9 +191,9 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        // Navigate to LoginActivity when back button is pressed
         Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
     }
 }
-

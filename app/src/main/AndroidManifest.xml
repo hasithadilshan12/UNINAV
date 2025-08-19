@@ -2,10 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions for location access and network -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Permissions for media access (for profile picture selection) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <application
         android:allowBackup="true"
@@ -18,6 +25,7 @@
         android:theme="@style/Theme.UNINAV"
         tools:targetApi="31">
 
+        <!-- Launcher activity when app starts -->
         <activity
             android:name=".WelcomeActivity"
             android:exported="true">
@@ -27,26 +35,26 @@
             </intent-filter>
         </activity>
 
-
+        <!-- Authentication activities -->
         <activity android:name=".LoginActivity" android:exported="false" />
         <activity android:name=".RegisterActivity" android:exported="false" />
         <activity android:name=".ForgotPasswordActivity" android:exported="false" />
 
-
+        <!-- Main app activities -->
         <activity android:name=".HomeActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" />
         <activity android:name=".MapActivity" android:exported="false" />
 
-
+        <!-- Navigation and utility activities -->
         <activity android:name=".LocationShowActivity" android:exported="false" />
         <activity android:name=".DestinationActivity" android:exported="false" />
         <activity android:name=".NavigationActivity" android:exported="false" />
         <activity android:name=".ProfileActivity" android:exported="false" />
 
+        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
-
 
     </application>
 

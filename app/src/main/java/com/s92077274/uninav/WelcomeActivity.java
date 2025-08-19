@@ -19,12 +19,9 @@ public class WelcomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
-
         mAuth = FirebaseAuth.getInstance();
 
-
         initViews();
-
 
         setClickListeners();
     }
@@ -32,31 +29,31 @@ public class WelcomeActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-
+        // Check if a user is already logged in
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-
+            // If logged in, navigate to HomeActivity
             Intent intent = new Intent(WelcomeActivity.this, HomeActivity.class);
-
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            finish();
+            finish(); // Finish WelcomeActivity
         }
-
     }
 
+    // Initialize UI components
     private void initViews() {
         btnGetStarted = findViewById(R.id.btnGetStarted);
     }
 
+    // Set up click listeners
     private void setClickListeners() {
         btnGetStarted.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                // Navigate to LoginActivity
                 Intent intent = new Intent(WelcomeActivity.this, LoginActivity.class);
                 startActivity(intent);
-
+                // Apply slide animation
                 overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
             }
         });

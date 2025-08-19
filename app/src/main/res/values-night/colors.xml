@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Your Original Colors (adjusted for dark mode compatibility) -->
+    <color name="colorPrimary">#90CAF9</color> <!-- Lighter blue for dark mode primary -->
+    <color name="colorPrimaryDark">#42A5F5</color>
+    <color name="colorAccent">#FFEB3B</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="red">#EF5350</color>
+    <color name="green">#66BB6A</color>
+    <color name="blue">#64B5F6</color>
+    <color name="grey">#B0B0B0</color>
+    <color name="light_grey">#424242</color>
+    <color name="text_hint_color">#A0A0A0</color>
+
+    <!-- Semantic Colors (these will change based on theme) -->
+    <!-- Primary Brand Colors - Use for main branding, buttons, active states -->
+    <color name="color_primary_brand">#7B5ACF</color> <!-- Slightly lighter purple for dark mode -->
+    <color name="color_on_primary_brand">#FFFFFF</color> <!-- Text/icons on primary color -->
+
+    <!-- Secondary Brand Colors -->
+    <color name="color_secondary_brand">#FFEB3B</color> <!-- Lighter yellow for dark mode secondary -->
+    <color name="color_on_secondary_brand">#000000</color>
+
+    <!-- Tertiary Brand Colors -->
+    <color name="color_tertiary_brand">#64B5F6</color> <!-- Lighter blue for dark mode tertiary -->
+    <color name="color_on_tertiary_brand">#FFFFFF</color>
+
+    <!-- Background Colors - Use for main screen backgrounds -->
+    <color name="color_background">#121212</color> <!-- Very dark background for screens -->
+    <color name="color_on_background">#FFFFFF</color> <!-- Explicitly white text/icons on dark background -->
+
+    <!-- Surface Colors - Use for cards, dialogs, bottom sheets, elevated elements -->
+    <color name="color_surface">#1E1E1E</color> <!-- Darker surface for cards/dialogs/sheets -->
+    <color name="color_on_surface">#FFFFFF</color> <!-- Explicitly white text/icons on dark surface -->
+    <color name="color_surface_variant">#424242</color> <!-- A darker surface variant -->
+    <color name="color_on_surface_variant">#E0E0E0</color>
+
+    <!-- Item Background Colors - Use for list item backgrounds (e.g., recent searches) -->
+    <color name="color_item_background">#2C2C2E</color> <!-- Dark background for list items -->
+    <color name="color_on_item_background">#FFFFFF</color> <!-- White text on list items -->
+    <color name="color_item_description">#CCCCCC</color> <!-- Lighter grey for description text -->
+
+    <!-- Bottom Navigation Colors -->
+    <color name="color_bottom_nav_background">#1E1E1E</color> <!-- Dark bottom nav background -->
+    <color name="color_bottom_nav_icon_active">#FFD700</color>
+    <color name="color_bottom_nav_icon_inactive">#CCCCCC</color> <!-- Lighter grey for inactive icons -->
+
+    <!-- Action Colors -->
+    <color name="color_error">#FF6347</color>
+    <color name="color_on_error">#FFFFFF</color>
+    <color name="color_error_container">#8C1D18</color>
+    <color name="color_on_error_container">#FFDAD6</color>
+
+    <color name="color_success">#66BB6A</color> <!-- Slightly brighter green for dark mode -->
+    <color name="color_outline">#9E9E9E</color> <!-- For borders/outlines -->
+
+    <!-- Explicitly define grey_dark for dark theme as well -->
+    <color name="grey_dark">#CCCCCC</color> <!-- A lighter grey for dark mode secondary text -->
+
+</resources>

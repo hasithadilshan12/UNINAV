@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.RotateAnimation;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -24,6 +26,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -31,55 +37,67 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
-
-
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-
+import com.bumptech.glide.Glide;
+import com.s92077274.uninav.utils.ImageUtils;
 import com.s92077274.uninav.models.MapPoint;
+import com.s92077274.uninav.utils.AppPaths;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class MapActivity extends AppCompatActivity implements
         OnMapReadyCallback,
-        GoogleMap.OnMarkerClickListener
-{
+        GoogleMap.OnMarkerClickListener,
+        SensorEventListener {
 
+    // Map and location related variables
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE_MAP = 1;
-
-    private TextView tvSearchHint;
-    private ImageView btnReCenter;
-    private LinearLayout navHome, navSearch, navMap, navProfile;
-
-    private List<MapPoint> mapPoints;
-    private Map<String, MapPoint> markerMapPointMap;
     private LatLng currentUserLatLng;
 
+    // UI components
+    private TextView tvSearchHint;
+    private ImageView btnReCenter, ivCompass;
+    private LinearLayout navHome, navSearch, navMap, navProfile;
+
+    // Data storage
+    private List<MapPoint> mapPoints;
+    private Map<String, MapPoint> markerMapPointMap;
     private BottomSheetDialog bottomSheetDialog;
     private MapPoint selectedDestinationPoint;
+    private static final String PREFS_NAME = "UniNavPrefs";
+    private static final String KEY_MAP_TYPE = "map_type";
+
+    // Sensor related variables for compass
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private Sensor magnetometer;
+    private float[] gravityValues;
+    private float[] geomagneticValues;
+    private float currentDegree = 0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
+        // Initialize location service and UI components
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
         initViews();
-        initMapPoints();
+        initMapPointsFromAppPaths();
         setClickListeners();
+        setupCompassSensors();
 
+        // Set up map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         if (mapFragment != null) {
@@ -89,6 +107,85 @@ public class MapActivity extends AppCompatActivity implements
         requestLocationPermission();
     }
 
+    // Initialize sensor components for compass functionality
+    private void setupCompassSensors() {
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            if (accelerometer == null || magnetometer == null) {
+                Toast.makeText(this, "Compass not available", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Restore map type preference
+        if (googleMap != null) {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            int mapType = prefs.getInt(KEY_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL);
+            googleMap.setMapType(mapType);
+        }
+
+        // Register sensor listeners for compass
+        if (sensorManager != null) {
+            if (accelerometer != null) sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+            if (magnetometer != null) sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Unregister sensor listeners to save battery
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+    }
+
+    // Handle sensor data changes for compass rotation
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            gravityValues = event.values.clone();
+        }
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            geomagneticValues = event.values.clone();
+        }
+
+        if (gravityValues != null && geomagneticValues != null) {
+            float[] rotationMatrix = new float[9];
+            float[] inclinationMatrix = new float[9];
+            if (SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, gravityValues, geomagneticValues)) {
+                float[] orientation = new float[3];
+                SensorManager.getOrientation(rotationMatrix, orientation);
+                float azimuthInDeg = (float) Math.toDegrees(orientation[0]);
+                azimuthInDeg = (azimuthInDeg + 360) % 360;
+
+                // Rotate compass image
+                if (ivCompass != null) {
+                    RotateAnimation ra = new RotateAnimation(
+                            currentDegree,
+                            -azimuthInDeg,
+                            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
+                            RotateAnimation.RELATIVE_TO_SELF, 0.5f);
+                    ra.setDuration(250);
+                    ra.setFillAfter(true);
+                    ivCompass.startAnimation(ra);
+                    currentDegree = -azimuthInDeg;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Handle sensor accuracy changes (not typically used for compass)
+    }
+
+    // Initialize all view references
     private void initViews() {
         tvSearchHint = findViewById(R.id.tvSearchHint);
         btnReCenter = findViewById(R.id.btnReCenter);
@@ -96,172 +193,168 @@ public class MapActivity extends AppCompatActivity implements
         navSearch = findViewById(R.id.navSearch);
         navMap = findViewById(R.id.navMap);
         navProfile = findViewById(R.id.navProfile);
+        ivCompass = findViewById(R.id.ivCompass);
     }
 
+    // Set up all click listeners for UI elements
     private void setClickListeners() {
         tvSearchHint.setOnClickListener(v -> {
-            Intent searchIntent = new Intent(MapActivity.this, SearchActivity.class);
-            startActivity(searchIntent);
+            startActivity(new Intent(MapActivity.this, SearchActivity.class));
         });
 
         btnReCenter.setOnClickListener(v -> {
-            if (googleMap != null) {
-                if (currentUserLatLng != null) {
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentUserLatLng, 17f));
-                    Toast.makeText(this, "Centered on your location", Toast.LENGTH_SHORT).show();
-                } else {
-                    LatLng ouslCampusCenter = new LatLng(6.883019826740543, 79.88670615788185);
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ouslCampusCenter, 15f));
-                    Toast.makeText(this, "Current location not available, centered on OUSL", Toast.LENGTH_LONG).show();
-                }
-            }
+            centerMapOnUserLocation();
+        });
+
+        ivCompass.setOnClickListener(v -> {
+            orientMapNorth();
         });
 
         navHome.setOnClickListener(v -> {
             startActivity(new Intent(MapActivity.this, HomeActivity.class));
             finish();
         });
+
         navSearch.setOnClickListener(v -> {
             startActivity(new Intent(MapActivity.this, SearchActivity.class));
             finish();
         });
+
         navMap.setOnClickListener(v -> {
-            Toast.makeText(MapActivity.this, "Already on Map page", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Already on Map", Toast.LENGTH_SHORT).show();
         });
+
         navProfile.setOnClickListener(v -> {
             startActivity(new Intent(MapActivity.this, ProfileActivity.class));
             finish();
         });
     }
 
+    // Center map on user's current location or default to OUSL
+    private void centerMapOnUserLocation() {
+        if (googleMap == null) return;
 
-    private void initMapPoints() {
-        mapPoints = new ArrayList<>();
-        markerMapPointMap = new HashMap<>();
-
-        mapPoints.add(new MapPoint("Public Information Office ,Financial Office", "Financial Office", 6.883387838930316f, 79.88654971785698f, "facilities"));
-        mapPoints.add(new MapPoint("Library", "Central Library", 6.886341603335691f, 79.88289203571986f, "academic"));
-        mapPoints.add(new MapPoint("CRC Office", "Colombo regional Center", 6.88347942072658f, 79.88664655562894f, "office"));
-        mapPoints.add(new MapPoint("Student Registration Office", "Registration Center", 6.883196206906299f, 79.88654142667893f, "academic"));
-        mapPoints.add(new MapPoint("Industry Liaison Center", "Academic Center", 6.88297452233968f, 79.8865736131866f, "academic"));
-        mapPoints.add(new MapPoint("Student Information Center", "Information Center", 6.882981845254872f, 79.88648107697742f, "academic"));
-        mapPoints.add(new MapPoint("Cafeteria 1", "Student Dining Hall", 6.882640917449825f, 79.88512860668303f, "food"));
-        mapPoints.add(new MapPoint("Cafeteria 2", "Student Dining Hall", 6.887295672388694f, 79.88092240982309f, "food"));
-        mapPoints.add(new MapPoint("Toilet 1", "Restroom Facilities(Block 7)", 6.8835583183688565f, 79.88520893476854f, "facilities"));
-        mapPoints.add(new MapPoint("Main Entrance", "University Main Gate Nawala", 6.882894376548958f, 79.88676273457729f, "entrance"));
-        mapPoints.add(new MapPoint("Security Room", "Security Room", 6.882941399855268f, 79.88669958170006f, "facilities"));
-        mapPoints.add(new MapPoint("Toilet 2", "Restroom Facilities(Library)", 6.886109088517432f, 79.88283042826042f, "facilities"));
-        mapPoints.add(new MapPoint("Neo Space Lab OUSL", "Space Lab", 6.883157687598526f, 79.88631782459649f, "facilities"));
-        mapPoints.add(new MapPoint("People's Bank ATM", "ATM machine", 6.882820264162557f, 79.88592024839622f, "facilities"));
-        mapPoints.add(new MapPoint("Bank of Ceylon ATM", "ATM machine", 6.882817439752699f, 79.8858718848885f, "facilities"));
-        mapPoints.add(new MapPoint("Lecture Hall", "Lecture Hall", 6.883239958668671f, 79.8857251503696f, "Academic"));
-        mapPoints.add(new MapPoint("Industrial Automation lab and Mechanical Engineering Labs", "Student Labs", 6.883476965982314f, 79.88576007141626f, "Academic"));
-        mapPoints.add(new MapPoint("Mechanical Engineering Workshop", "Lecture Hall", 6.883691926651343f, 79.88587947188455f, "Academic"));
-        mapPoints.add(new MapPoint("Block 19", "Blocks", 6.883032000907498f, 79.88556594457505f, "Academic"));
-        mapPoints.add(new MapPoint("Faculty of Health Sciences", "Faculty", 6.882898062989423f, 79.88531564252635f, "Academic"));
-        mapPoints.add(new MapPoint("Block 12", "Blocks", 6.8833497022676475f, 79.8853224588232f, "Academic"));
-        mapPoints.add(new MapPoint("Block 10 Lecture Halls", "Lecture Hall", 6.883045328596026f, 79.88502150970841f, "Academic"));
-        mapPoints.add(new MapPoint("Block 9 Lecture Halls", "Lecture Hall", 6.883210454609008f, 79.88502681102304f, "Academic"));
-        mapPoints.add(new MapPoint("Block 8 Lecture Halls", "Lecture Hall", 6.883436614127009f, 79.88505613200176f, "Academic"));
-        mapPoints.add(new MapPoint("Block 7 Auditorium", "Auditorium", 6.883676067903975f, 79.88514138145833f, "Academic"));
-        mapPoints.add(new MapPoint("Computer Science Lab", "Labs", 6.883732391362575f, 79.88499352135757f, "Academic"));
-        mapPoints.add(new MapPoint("Block 6 Textile & Apparel Technology Laboratories", "Labs", 6.882721215918876f, 79.88471832298997f, "Academic"));
-        mapPoints.add(new MapPoint("Center for Environmental Studies and Sustainable Development", "Environmental study center", 6.883132222483538f, 79.88474287667883f, "Academic"));
-        mapPoints.add(new MapPoint("Zoology Biodiversity Museum", "Museum", 6.883147310440679f, 79.88459111333688f, "Academic"));
-        mapPoints.add(new MapPoint("Block 2 Department of Civil Engineering Laboratories", "Labs", 6.883570664068851f, 79.88477664931786f, "Academic"));
-        mapPoints.add(new MapPoint("Faculty Of Education", "Faculty", 6.8828243500254125f, 79.8840645666408f, "Academic"));
-        mapPoints.add(new MapPoint("Pre school OUSL", "Pre School", 6.882704552515855f, 79.88379616691259f, "Academic"));
-        mapPoints.add(new MapPoint("Open University Student Vehicle Park", "Vehicle Park", 6.882856818504107f, 79.88378037869327f, "facilities"));
-        mapPoints.add(new MapPoint("Printing Press Open University", "Printing press", 6.88316743949768f, 79.88401446116109f, "facilities"));
-        mapPoints.add(new MapPoint("Medical Center and staff Day care", "Day care center", 6.883136138657897f, 79.88359801469844f, "facilities"));
-        mapPoints.add(new MapPoint("Examination Hall 02", "Examination Hall", 6.883430837179069f, 79.88425007052366f, "Academic"));
-        mapPoints.add(new MapPoint("Milk Bar", "Milk Bar", 6.883524042574925f, 79.88431550350468f, "facilities"));
-        mapPoints.add(new MapPoint("The Open University Sri Lanka Press", "The Open University Sri Lanka Press", 6.883517452295021f, 79.88400730468105f, "Academic"));
-        mapPoints.add(new MapPoint("Course Material Distribution Centre", "Course Material Distribution Centre", 6.883503330266318f, 79.88374177954069f, "Academic"));
-        mapPoints.add(new MapPoint(" Budu Medura", " Open University Budu Medura", 6.883520276703287f, 79.88347815100433f, "facilities"));
-        mapPoints.add(new MapPoint("Exam Hall 01", "Exam Hall", 6.883687312124374f, 79.88422086399399f, "Academic"));
-        mapPoints.add(new MapPoint("Automobile Laboratory", "Labs", 6.883780028626025f, 79.88374011144836f, "Academic"));
-        mapPoints.add(new MapPoint("Science and Technology Building", "Science Building", 6.884002098019608f, 79.88369167149267f, "Academic"));
-        mapPoints.add(new MapPoint(" Examination Hall 22", "Exam Hall", 6.88458704974357f, 79.88414331911741f, "Academic"));
-        mapPoints.add(new MapPoint("Department of Mathematics and Computer Science", "Computer Science Building", 6.884542050021143f, 79.88382032910988f, "Academic"));
-        mapPoints.add(new MapPoint("Faculty of Engineering Technology", "Faculty", 6.8843921698834425f, 79.8834793648744f, "Academic"));
-        mapPoints.add(new MapPoint("Faculty of Health Sciences OUSL", "Faculty", 6.885019640360351f, 79.88374758437962f, "Academic"));
-        mapPoints.add(new MapPoint("Examination Hall 23", "Exam Hall", 6.885132616217157f, 79.88358732099132f, "Academic"));
-        mapPoints.add(new MapPoint("Examination Hall 3", "Exam Hall", 6.8851222600980675f, 79.88336826275052f, "Academic"));
-        mapPoints.add(new MapPoint("Toilet 3", "Student Toilet", 6.88532824524713f, 79.88372743540023f, "Facilities"));
-        mapPoints.add(new MapPoint("Media House", "Media center", 6.885654688243899f, 79.88317760710412f, "Academic"));
-        mapPoints.add(new MapPoint(" Instructional Development and Design Centre", "Design Center", 6.885580069084658f, 79.8825436245047f, "Academic"));
-        mapPoints.add(new MapPoint("Faculty of Humanities and Social Sciences", "Faculty", 6.886848081576389f, 79.88251410405074f, "Academic"));
-        mapPoints.add(new MapPoint("Information Technology Division", "IT Division", 6.88727046555444f, 79.8824892372666f, "Office"));
-        mapPoints.add(new MapPoint("Research Unit", "Research Unit", 6.887272639229794f, 79.88236536558716f, "Office"));
-        mapPoints.add(new MapPoint("Operations Division", "Operations Division", 6.887237356410955f, 79.88232714410945f, "Office"));
-        mapPoints.add(new MapPoint("Regional Educational Services Division", "Educational Services Division", 6.887214056434813f, 79.88233250852738f, "Office"));
-        mapPoints.add(new MapPoint("Capital Works and Planning Division", "Capital Works Division", 6.887168122192765f, 79.88230233367656f, "Office"));
-        mapPoints.add(new MapPoint("International Relations Unit", "International Relations Unit", 6.887265982095927f, 79.88226008888314f, "Office"));
-        mapPoints.add(new MapPoint("Examinations Division", "Examinations Division", 6.887379102424722f, 79.88201435004146f, "Office"));
-        mapPoints.add(new MapPoint("Establishments Division", "Establishments Division", 6.887598897774366f, 79.8819837574954f, "Office"));
-        mapPoints.add(new MapPoint("Administrative Car Park", "Car Park", 6.886719471359535f, 79.88193951912714f, "Facilities"));
-        mapPoints.add(new MapPoint("Staff Development Center", "Staff Development Center", 6.886763338627007f, 79.88163175927652f, "Office"));
-        mapPoints.add(new MapPoint("Dormitory", "Dormitory", 6.887056427947631f, 79.88135657143276f, "Facilities"));
-        mapPoints.add(new MapPoint("Landscape Division", "Landscape Division", 6.886668313000202f, 79.88121751714307f, "Office"));
-        mapPoints.add(new MapPoint("Lands & Building Department", "Lands & Building Department", 6.886863169979508f, 79.88104712144259f, "Office"));
-        mapPoints.add(new MapPoint("Guest House", "Open University Guest House", 6.88684447613824f, 79.88063441636996f, "Facilities"));
-        mapPoints.add(new MapPoint("Play Ground", "Open University Play Ground", 6.887845887661954f, 79.88130502150541f, "Facilities"));
-        mapPoints.add(new MapPoint("Postgraduate Institute of English", "Postgraduate Institute of English, Open University of Sri Lanka PGIE", 6.888250733509577f, 79.88050185380025f, "Academic"));
-        mapPoints.add(new MapPoint("Exam hall 4", "Exam Hall", 6.888033053195006f, 79.87979094971014f, "Academic"));
-        mapPoints.add(new MapPoint("Exam Hall 05", "OUSL Exam Hall 05", 6.887938959039237f, 79.87918207871505f, "Academic"));
-        mapPoints.add(new MapPoint("Exam Hall 06", "OUSL Exam Hall 06", 6.888175192618121f, 79.87917756779498f, "Academic"));
-        mapPoints.add(new MapPoint("TRF Hostel", "TRF Hostel (Open University Sri Lanka )", 6.888365114969738f, 79.8793654415212f, "Facilities"));
-    }
-
-    @Override
-    public void onMapReady(@NonNull GoogleMap map) {
-        googleMap = map;
-        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.getUiSettings().setCompassEnabled(true);
-        googleMap.getUiSettings().setMyLocationButtonEnabled(true);
-
-        googleMap.setOnMarkerClickListener(this);
-
-        addCampusMarkers();
-        zoomToOUSLBounds();
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            googleMap.setMyLocationEnabled(true);
+        if (currentUserLatLng != null) {
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentUserLatLng, 17f));
+            Toast.makeText(this, "Centered on your location", Toast.LENGTH_SHORT).show();
         } else {
-            Log.d("MapActivity", "Location permission not granted for My Location layer.");
+            LatLng ouslCenter = new LatLng(6.883019826740543, 79.88670615788185);
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ouslCenter, 15f));
+            Toast.makeText(this, "Centered on OUSL", Toast.LENGTH_LONG).show();
         }
     }
 
-    private void addCampusMarkers() {
-        for (MapPoint point : mapPoints) {
-            LatLng latLng = new LatLng(point.x, point.y);
-            Marker marker = googleMap.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title(point.name)
-                    .snippet(point.description));
+    // Orient map to face north
+    private void orientMapNorth() {
+        if (googleMap != null && currentUserLatLng != null) {
+            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
+                    new com.google.android.gms.maps.model.CameraPosition.Builder()
+                            .target(currentUserLatLng)
+                            .zoom(googleMap.getCameraPosition().zoom)
+                            .bearing(0)
+                            .tilt(0)
+                            .build()
+            ));
+            Toast.makeText(this, "Map oriented North", Toast.LENGTH_SHORT).show();
+        }
+    }
 
-            if (marker != null) {
-                markerMapPointMap.put(marker.getId(), point);
+    // Load map points from AppPaths utility class
+    private void initMapPointsFromAppPaths() {
+        mapPoints = new ArrayList<>();
+        markerMapPointMap = new HashMap<>();
+        for (String name : AppPaths.getAllMapPointNames()) {
+            MapPoint point = AppPaths.getMapPointByName(name);
+            if (point != null) {
+                mapPoints.add(point);
             }
         }
     }
 
-    private void zoomToOUSLBounds() {
-        if (mapPoints.isEmpty()) return;
+    // Called when map is ready to be used
+    @Override
+    public void onMapReady(@NonNull GoogleMap map) {
+        googleMap = map;
 
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        for (MapPoint point : mapPoints) {
-            builder.include(new LatLng(point.x, point.y));
+        // Set map type from preferences
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int mapType = prefs.getInt(KEY_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL);
+        googleMap.setMapType(mapType);
+
+        // Configure map UI settings
+        googleMap.getUiSettings().setZoomControlsEnabled(true);
+        googleMap.getUiSettings().setCompassEnabled(true);
+        googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+        // Set up map interactions
+        googleMap.setOnMarkerClickListener(this);
+        addCampusMarkers();
+        zoomToOUSLBounds();
+
+        // Enable location layer if permission granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            try {
+                googleMap.setMyLocationEnabled(true);
+            } catch (SecurityException e) {
+                Log.e("MapActivity", "Location permission error", e);
+            }
         }
-        LatLngBounds bounds = builder.build();
-
-        int padding = 150;
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
     }
 
+    // Add markers for all campus locations
+    private void addCampusMarkers() {
+        if (googleMap == null) return;
+
+        googleMap.clear();
+        markerMapPointMap.clear();
+
+        for (MapPoint point : mapPoints) {
+            if (point != null) {
+                LatLng latLng = new LatLng(point.x, point.y);
+                Marker marker = googleMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(point.name)
+                        .snippet(point.description));
+
+                if (marker != null) {
+                    markerMapPointMap.put(marker.getId(), point);
+                }
+            }
+        }
+    }
+
+    // Zoom map to show all OUSL locations
+    private void zoomToOUSLBounds() {
+        if (googleMap == null) return;
+
+        if (mapPoints.isEmpty()) {
+            LatLng ouslCenter = new LatLng(6.883019826740543, 79.88670615788185);
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ouslCenter, 15f));
+            return;
+        }
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        boolean hasValidPoint = false;
+        for (MapPoint point : mapPoints) {
+            if (point != null) {
+                builder.include(new LatLng(point.x, point.y));
+                hasValidPoint = true;
+            }
+        }
+
+        if (hasValidPoint) {
+            try {
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
+            } catch (IllegalStateException e) {
+                if (!mapPoints.isEmpty() && mapPoints.get(0) != null) {
+                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mapPoints.get(0).toLatLng(), 17f));
+                }
+            }
+        }
+    }
+
+    // Handle marker clicks
     @Override
     public boolean onMarkerClick(@NonNull Marker marker) {
         selectedDestinationPoint = markerMapPointMap.get(marker.getId());
@@ -271,6 +364,7 @@ public class MapActivity extends AppCompatActivity implements
         return true;
     }
 
+    // Request location permission if not granted
     private void requestLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -285,44 +379,48 @@ public class MapActivity extends AppCompatActivity implements
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Handle location permission result
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE_MAP) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (googleMap != null) {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
+                if (googleMap != null && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    try {
                         googleMap.setMyLocationEnabled(true);
+                    } catch (SecurityException e) {
+                        Log.e("MapActivity", "Location permission error", e);
                     }
                 }
                 getDeviceLocation();
             } else {
-                Toast.makeText(this, "Location permission denied. Map features may be limited.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show();
             }
         }
     }
 
+    // Get device's last known location
     private void getDeviceLocation() {
         try {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 fusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                            @Override
-                            public void onSuccess(Location location) {
-                                if (location != null) {
-                                    currentUserLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                    Log.d("MapActivity", "Got current location: " + currentUserLatLng.latitude + ", " + currentUserLatLng.longitude);
-                                } else {
-                                    Log.d("MapActivity", "Current location is null.");
-                                }
+                        .addOnSuccessListener(this, location -> {
+                            if (location != null) {
+                                currentUserLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                             }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("MapActivity", "Location error", e);
                         });
             }
-        } catch (SecurityException e) {
-            Log.e("MapActivity", "Security Exception: " + e.getMessage());
+        } catch (Exception e) {
+            Log.e("MapActivity", "Location error", e);
         }
     }
 
+    // Show bottom panel with location actions
     private void showBottomActionPanel(final MapPoint destinationPoint) {
+        if (destinationPoint == null) return;
+
         if (bottomSheetDialog != null && bottomSheetDialog.isShowing()) {
             bottomSheetDialog.dismiss();
         }
@@ -331,52 +429,100 @@ public class MapActivity extends AppCompatActivity implements
         View bottomSheetView = getLayoutInflater().inflate(R.layout.bottom_location_actions, null);
         bottomSheetDialog.setContentView(bottomSheetView);
 
+        // Initialize panel views
         TextView tvPanelLocationName = bottomSheetView.findViewById(R.id.tvPanelLocationName);
         TextView tvPanelLocationDescription = bottomSheetView.findViewById(R.id.tvPanelLocationDescription);
+        ImageView locationImage = bottomSheetView.findViewById(R.id.locationImage);
         Button btnPanelDirections = bottomSheetView.findViewById(R.id.btnPanelDirections);
         Button btnPanelStartNav = bottomSheetView.findViewById(R.id.btnPanelStartNav);
 
-        tvPanelLocationName.setText(destinationPoint.name);
-        tvPanelLocationDescription.setText(destinationPoint.description);
+        // Set location info
+        tvPanelLocationName.setText(destinationPoint.name != null ? destinationPoint.name : "Unknown Location");
+        tvPanelLocationDescription.setText(destinationPoint.description != null ? destinationPoint.description : "No description available.");
 
+        // Load location image
+        int imageResId = ImageUtils.getDrawableIdForLocation(this, destinationPoint.name);
+        Glide.with(this)
+                .load(imageResId)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .error(R.drawable.ic_image_placeholder)
+                .into(locationImage);
+        locationImage.setVisibility(View.VISIBLE);
+
+        // Set up button click handlers
         btnPanelDirections.setOnClickListener(v -> {
             bottomSheetDialog.dismiss();
-            showStartLocationDialog(destinationPoint);
+            showStartLocationDialog(destinationPoint, DestinationActivity.class);
         });
 
         btnPanelStartNav.setOnClickListener(v -> {
             bottomSheetDialog.dismiss();
-            if (currentUserLatLng != null) {
-                proceedToNextActivity(
-                        "Your Current Location",
-                        (float) currentUserLatLng.latitude, (float) currentUserLatLng.longitude,
-                        true,
-                        destinationPoint,
-                        NavigationActivity.class
-                );
-            } else {
-                Toast.makeText(MapActivity.this, "Current location not available for immediate start. Please try 'Directions' or enable location.", Toast.LENGTH_LONG).show();
-            }
+            handleNavigationStart(destinationPoint);
         });
 
         bottomSheetDialog.show();
     }
 
-    private void showStartLocationDialog(MapPoint destinationPoint) {
+    // Handle navigation start logic
+    private void handleNavigationStart(MapPoint destinationPoint) {
+        if (currentUserLatLng != null) {
+            MapPoint nearestCampusPoint = AppPaths.findNearestMapPoint(currentUserLatLng);
+
+            if (nearestCampusPoint == null) {
+                Toast.makeText(this, "No nearby campus point found", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            if (nearestCampusPoint.name.equals(destinationPoint.name)) {
+                Toast.makeText(this, "Start and destination cannot match", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            List<LatLng> route = AppPaths.getRoute(nearestCampusPoint.name, destinationPoint.name);
+
+            if (route == null || route.isEmpty()) {
+                Toast.makeText(this, "No route found", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            ArrayList<LatLng> finalRoute = new ArrayList<>(route);
+            if (!finalRoute.isEmpty() && !finalRoute.get(0).equals(currentUserLatLng)) {
+                finalRoute.add(0, currentUserLatLng);
+            } else if (finalRoute.isEmpty()) {
+                finalRoute.add(currentUserLatLng);
+                finalRoute.add(new LatLng(destinationPoint.x, destinationPoint.y));
+            }
+
+            proceedToNavigation(
+                    "Your Current Location",
+                    (float) currentUserLatLng.latitude, (float) currentUserLatLng.longitude,
+                    true,
+                    destinationPoint,
+                    NavigationActivity.class,
+                    finalRoute
+            );
+        } else {
+            Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show();
+            showStartLocationDialog(destinationPoint, NavigationActivity.class);
+        }
+    }
+
+    // Show dialog to select start location
+    private void showStartLocationDialog(MapPoint destinationPoint, Class<?> targetActivityClass) {
+        if (destinationPoint == null) return;
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_start_location, null);
         builder.setView(dialogView);
 
+        // Initialize dialog views
         AutoCompleteTextView etStartLocation = dialogView.findViewById(R.id.etStartLocation);
         Button btnUseCurrentLocation = dialogView.findViewById(R.id.btnUseCurrentLocation);
         Button btnConfirmStart = dialogView.findViewById(R.id.btnConfirmStart);
 
-        List<String> locationNames = new ArrayList<>();
-
-        for (MapPoint point : mapPoints) {
-            locationNames.add(point.name);
-        }
+        // Set up autocomplete adapter
+        List<String> locationNames = AppPaths.getAllMapPointNames();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_dropdown_item_1line,
@@ -387,95 +533,111 @@ public class MapActivity extends AppCompatActivity implements
 
         AlertDialog dialog = builder.create();
 
-
+        // Handle text changes in search field
         etStartLocation.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
-                boolean isInputEmpty = s.toString().trim().isEmpty();
-                btnUseCurrentLocation.setEnabled(isInputEmpty);
 
-                boolean found = false;
-                if (!isInputEmpty) {
-                    for (MapPoint p : mapPoints) {
-                        if (p.name.equalsIgnoreCase(s.toString().trim())) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                btnConfirmStart.setEnabled(found);
+            @Override
+            public void afterTextChanged(Editable s) {
+                boolean isEmpty = s.toString().trim().isEmpty();
+                btnUseCurrentLocation.setEnabled(isEmpty);
+                btnConfirmStart.setEnabled(!isEmpty && AppPaths.getMapPointByName(s.toString().trim()) != null);
             }
         });
 
-
+        // Handle current location button click
         btnUseCurrentLocation.setOnClickListener(v -> {
             if (currentUserLatLng != null) {
-                proceedToNextActivity(
+                MapPoint nearestPoint = AppPaths.findNearestMapPoint(currentUserLatLng);
+                if (nearestPoint == null) {
+                    Toast.makeText(this, "No nearby campus point found", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (nearestPoint.name.equals(destinationPoint.name)) {
+                    Toast.makeText(this, "Start and destination cannot match", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                List<LatLng> route = AppPaths.getRoute(nearestPoint.name, destinationPoint.name);
+                if (route == null || route.isEmpty()) {
+                    Toast.makeText(this, "No route found", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                ArrayList<LatLng> finalRoute = new ArrayList<>(route);
+                if (!finalRoute.isEmpty() && !finalRoute.get(0).equals(currentUserLatLng)) {
+                    finalRoute.add(0, currentUserLatLng);
+                }
+
+                dialog.dismiss();
+                proceedToNavigation(
                         "Your Current Location",
                         (float) currentUserLatLng.latitude, (float) currentUserLatLng.longitude,
                         true,
                         destinationPoint,
-                        DestinationActivity.class
+                        targetActivityClass,
+                        finalRoute
                 );
-                dialog.dismiss();
             } else {
-                Toast.makeText(MapActivity.this, "Current location not available. Please grant permission or try again.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show();
             }
         });
 
+        // Handle confirm button click
         btnConfirmStart.setOnClickListener(v -> {
-            String selectedStartName = etStartLocation.getText().toString().trim();
-            MapPoint startPoint = null;
-
-            for (MapPoint p : mapPoints) {
-                if (p.name.equalsIgnoreCase(selectedStartName)) {
-                    startPoint = p;
-                    break;
-                }
-            }
+            String selectedStart = etStartLocation.getText().toString().trim();
+            MapPoint startPoint = AppPaths.getMapPointByName(selectedStart);
 
             if (startPoint != null) {
-                proceedToNextActivity(
+                if (startPoint.name.equals(destinationPoint.name)) {
+                    Toast.makeText(this, "Start and destination cannot match", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                List<LatLng> route = AppPaths.getRoute(startPoint.name, destinationPoint.name);
+                if (route == null || route.isEmpty()) {
+                    Toast.makeText(this, "No route found", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                dialog.dismiss();
+                proceedToNavigation(
                         startPoint.name,
                         startPoint.x, startPoint.y,
                         false,
                         destinationPoint,
-                        DestinationActivity.class
+                        targetActivityClass,
+                        route
                 );
-                dialog.dismiss();
             } else {
-                Toast.makeText(MapActivity.this, "Please select a valid start location from the suggestions.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Select a valid start location", Toast.LENGTH_SHORT).show();
             }
         });
 
         dialog.show();
     }
 
-    private void proceedToNextActivity(String startLocationName, float startLat, float startLng,
-                                       boolean isLiveLocation, MapPoint destinationPoint,
-                                       Class<?> targetActivityClass) {
-        Intent intent = new Intent(MapActivity.this, targetActivityClass);
+    // Start navigation activity with route data
+    private void proceedToNavigation(String startLocationName, float startLat, float startLng,
+                                     boolean isLiveLocation, MapPoint destinationPoint,
+                                     Class<?> targetActivityClass, List<LatLng> routePath) {
+        Intent intent = new Intent(this, targetActivityClass);
 
+        // Add destination data
         intent.putExtra("destination_name", destinationPoint.name);
         intent.putExtra("destination_lat", destinationPoint.x);
         intent.putExtra("destination_lng", destinationPoint.y);
 
+        // Add start location data
         intent.putExtra("start_location_name", startLocationName);
         intent.putExtra("user_lat", startLat);
         intent.putExtra("user_lng", startLng);
         intent.putExtra("is_live_location", isLiveLocation);
 
+        // Add route path
+        intent.putParcelableArrayListExtra("route_path", new ArrayList<>(routePath));
+
         startActivity(intent);
     }
 }
-
-
-
-
-
-
-
-
-
-

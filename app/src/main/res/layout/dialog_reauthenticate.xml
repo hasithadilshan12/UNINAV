@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/rounded_dialog_background"
+    android:gravity="center_horizontal">
+
+<TextView
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="Verify Your Identity"
+android:textSize="20sp"
+android:textStyle="bold"
+android:textColor="@android:color/black"
+    android:layout_marginBottom="16dp" />
+
+<TextView
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="Please enter your current password to confirm this change."
+android:textColor="@color/grey_dark"
+    android:textSize="14sp"
+    android:textAlignment="center"
+    android:layout_marginBottom="24dp" />
+
+<com.google.android.material.textfield.TextInputLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginBottom="24dp"
+app:hintTextColor="@color/grey_dark"
+app:boxStrokeColor="@color/color_primary_brand"
+app:boxCornerRadiusTopStart="8dp"
+app:boxCornerRadiusTopEnd="8dp"
+app:boxCornerRadiusBottomStart="8dp"
+app:boxCornerRadiusBottomEnd="8dp"
+app:passwordToggleEnabled="true"
+app:passwordToggleTint="@color/color_primary_brand"
+app:hintEnabled="true"
+    android:hint="Current Password"
+    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+
+<com.google.android.material.textfield.TextInputEditText
+android:id="@+id/etCurrentPassword"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:inputType="textPassword"
+android:textColor="@android:color/black"
+    android:textColorHint="@color/grey_dark"
+    android:padding="12dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+<Button
+android:id="@+id/btnConfirmReauth"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="Confirm"
+android:textColor="@android:color/white"
+android:backgroundTint="@color/color_primary_brand"
+android:textSize="16sp"
+android:textStyle="bold"
+app:cornerRadius="8dp"
+android:layout_marginBottom="8dp" />
+
+<Button
+android:id="@+id/btnCancelReauth"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="Cancel"
+android:textColor="@android:color/white"
+android:backgroundTint="@color/grey"
+    android:textStyle="bold"
+    app:cornerRadius="8dp" />
+
+    </LinearLayout>

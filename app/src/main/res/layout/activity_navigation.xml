@@ -41,7 +41,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Remaining: 0.0 km"
+            android:text="Remaining Distance: 0.0 km\nEstimated Time: 0 min"
             android:textSize="14sp" />
 
         <Button
@@ -59,19 +59,35 @@
         android:id="@+id/btnReCenter"
         android:layout_width="56dp"
         android:layout_height="56dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
         android:layout_alignParentEnd="true"
-        android:layout_alignBottom="@+id/navigationInfoCard"
-        android:layout_marginBottom="-70dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="110dp"
         android:background="@drawable/fab_background"
         android:src="@drawable/ic_my_location"
-        android:elevation="8dp"
+        android:elevation="20dp"
         app:tint="#1565C0"
         android:contentDescription="Re-center map on current location"
         android:clickable="true"
         android:focusable="true"
-        android:padding="16dp"
-        android:visibility="gone"/>
+        android:padding="16dp" />
+
+    <!-- Visual Compass ImageView -->
+    <ImageView
+        android:id="@+id/ivCompassNav"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_above="@+id/btnReCenter"
+        android:layout_alignStart="@+id/btnReCenter"
+        android:layout_alignEnd="@+id/btnReCenter"
+        android:layout_marginBottom="8dp"
+        android:src="@drawable/ic_compass"
+        android:contentDescription="Compass"
+        android:elevation="8dp"
+        android:background="@drawable/fab_background"
+        android:padding="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="visible" />
 
 </RelativeLayout>

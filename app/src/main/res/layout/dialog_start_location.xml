@@ -5,6 +5,7 @@
     android:orientation="vertical"
     android:padding="24dp">
 
+    <!-- Dialog Title -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -14,6 +15,7 @@
         android:textColor="@android:color/black"
         android:layout_marginBottom="16dp"/>
 
+    <!-- AutoCompleteTextView for entering start location -->
     <AutoCompleteTextView
         android:id="@+id/etStartLocation"
         android:layout_width="match_parent"
@@ -22,6 +24,7 @@
         android:completionThreshold="1"
         android:inputType="textCapWords"/>
 
+    <!-- Button to use current location -->
     <Button
         android:id="@+id/btnUseCurrentLocation"
         android:layout_width="match_parent"
@@ -32,6 +35,7 @@
         android:textColor="#FFFFFF"
         android:enabled="true"/>
 
+    <!-- Button to confirm selected location -->
     <Button
         android:id="@+id/btnConfirmStart"
         android:layout_width="match_parent"
@@ -43,3 +47,4 @@
         android:enabled="false" />
 
 </LinearLayout>
+

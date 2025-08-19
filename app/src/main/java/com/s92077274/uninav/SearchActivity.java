@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.s92077274.uninav.SearchResultsAdapter;
 import com.s92077274.uninav.models.MapPoint;
@@ -39,6 +40,7 @@ public class SearchActivity extends AppCompatActivity {
         setClickListeners();
     }
 
+    // Initializes UI components
     private void initViews() {
         etSearch = findViewById(R.id.etSearch);
         btnSearchIcon = findViewById(R.id.btnSearchIcon);
@@ -48,7 +50,7 @@ public class SearchActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
     }
 
-
+    // Initializes the list of all predefined locations
     private void initData() {
         allLocations = new ArrayList<>();
 
@@ -129,11 +131,12 @@ public class SearchActivity extends AppCompatActivity {
         filteredLocations = new ArrayList<>(allLocations);
     }
 
+    // Sets up the RecyclerView with its adapter and layout manager
     private void setupRecyclerView() {
         adapter = new SearchResultsAdapter(filteredLocations, location -> {
             Log.d(TAG, "Search result clicked: " + location.name +
                     " X: " + location.x + ", Y: " + location.y);
-            HomeActivity.addRecentSearch(this, location);
+            HomeActivity.addRecentSearch(this, location); // Add clicked location to recent searches
 
             Intent intent = new Intent(SearchActivity.this, LocationShowActivity.class);
             intent.putExtra("location_name", location.name);
@@ -146,6 +149,7 @@ public class SearchActivity extends AppCompatActivity {
         recyclerSearchResults.setAdapter(adapter);
     }
 
+    // Sets up click and text change listeners for UI elements
     private void setClickListeners() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -153,7 +157,7 @@ public class SearchActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterLocations(s.toString());
+                filterLocations(s.toString()); // Filter locations as text changes
             }
 
             @Override
@@ -162,9 +166,10 @@ public class SearchActivity extends AppCompatActivity {
 
         btnSearchIcon.setOnClickListener(v -> {
             String query = etSearch.getText().toString();
-            filterLocations(query);
+            filterLocations(query); // Filter locations on search icon click
         });
 
+        // Navigation bar click listeners
         LinearLayout navHome = findViewById(R.id.navHome);
         LinearLayout navSearch = findViewById(R.id.navSearch);
         LinearLayout navMap = findViewById(R.id.navMap);
@@ -173,7 +178,9 @@ public class SearchActivity extends AppCompatActivity {
         navHome.setOnClickListener(v -> {
             startActivity(new Intent(SearchActivity.this, HomeActivity.class));
         });
-        navSearch.setOnClickListener(v -> {});
+        navSearch.setOnClickListener(v -> {
+            Toast.makeText(SearchActivity.this, "Already on Search page", Toast.LENGTH_SHORT).show();
+        });
         navMap.setOnClickListener(v -> {
             startActivity(new Intent(SearchActivity.this, MapActivity.class));
         });
@@ -182,20 +189,19 @@ public class SearchActivity extends AppCompatActivity {
         });
     }
 
+    // Filters the list of locations based on the search query
     private void filterLocations(String query) {
         filteredLocations.clear();
         if (query.isEmpty()) {
-            filteredLocations.addAll(allLocations);
+            filteredLocations.addAll(allLocations); // Show all if query is empty
         } else {
             for (MapPoint location : allLocations) {
+                // Check if location name contains the query (case-insensitive)
                 if (location.name.toLowerCase().contains(query.toLowerCase())) {
                     filteredLocations.add(location);
                 }
             }
         }
-        adapter.notifyDataSetChanged();
+        adapter.notifyDataSetChanged(); // Refresh RecyclerView with filtered data
     }
 }
-
-
-

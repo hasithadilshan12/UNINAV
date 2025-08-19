@@ -16,6 +16,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageView;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
+
+import com.bumptech.glide.Glide;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -23,6 +28,11 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -46,15 +56,22 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private RecentSearchesAdapter recentSearchesAdapter;
     private List<MapPoint> recentSearchesList;
 
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_RECENT_SEARCHES = "recent_searches";
     private static final int MAX_RECENT_SEARCHES = 5;
     private static final String TAG = "HomeActivity";
+    private static final String KEY_MAP_TYPE = "map_type";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         initViews();
         loadRecentSearches();
@@ -73,6 +90,9 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onResume();
         loadRecentSearches();
         updateRecentSearchesUI();
+        applyMapTypeSetting();
+        // Fetch and display the user's profile picture on resume
+        fetchAndDisplayUserProfilePicture();
     }
 
     private void initViews() {
@@ -112,10 +132,11 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(@NonNull GoogleMap map) {
         googleMap = map;
-        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        applyMapTypeSetting();
+
         googleMap.getUiSettings().setZoomControlsEnabled(false);
         googleMap.getUiSettings().setCompassEnabled(true);
-        googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+        googleMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         LatLng ouslCampusCenter = new LatLng(6.883019826740543, 79.88670615788185);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ouslCampusCenter, 15f));
@@ -124,6 +145,55 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .title("The Open University of Sri Lanka")
                 .snippet("Your Campus"));
     }
+
+    private void applyMapTypeSetting() {
+        if (googleMap != null) {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            int mapType = prefs.getInt(KEY_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL);
+            googleMap.setMapType(mapType);
+            Log.d(TAG, "Applied map type: " + (mapType == GoogleMap.MAP_TYPE_NORMAL ? "Normal" : "Satellite"));
+        }
+    }
+
+    /**
+     * Fetches the user's profile picture URL from Firestore and displays it.
+     */
+    private void fetchAndDisplayUserProfilePicture() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            DocumentReference docRef = db.collection("users").document(user.getUid());
+            docRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult().exists()) {
+                    String base64Image = task.getResult().getString("profilePictureBase64");
+
+                    if (base64Image != null && !base64Image.isEmpty()) {
+                        try {
+                            byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+
+                            if (bitmap != null) {
+                                ivProfile.setImageBitmap(bitmap);
+                            } else {
+                                Log.e("HomeActivity", "Bitmap decode returned null.");
+                                ivProfile.setImageResource(R.drawable.ic_profile);
+                            }
+                        } catch (Exception e) {
+                            Log.e("HomeActivity", "Error decoding Base64 image", e);
+                            ivProfile.setImageResource(R.drawable.ic_profile);
+                        }
+                    } else {
+                        Log.d("HomeActivity", "No profile picture set.");
+                        ivProfile.setImageResource(R.drawable.ic_profile);
+                    }
+                } else {
+                    Log.e("HomeActivity", "Failed to fetch document", task.getException());
+                    ivProfile.setImageResource(R.drawable.ic_profile);
+                }
+            });
+        }
+    }
+
+
 
     private void setupRecyclerView() {
         recentSearchesList = new ArrayList<>();
@@ -188,5 +258,3 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 }
-
-

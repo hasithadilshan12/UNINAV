@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Search Bar at the top -->
+    <!-- Search Bar -->
     <LinearLayout
         android:id="@+id/searchBarContainer"
         android:layout_width="match_parent"
@@ -46,7 +46,7 @@
             android:layout_marginStart="12dp" />
     </LinearLayout>
 
-    <!--Re-center Button -->
+    <!-- Re-center Button -->
     <ImageView
         android:id="@+id/btnReCenter"
         android:layout_width="56dp"
@@ -64,6 +64,24 @@
         android:focusable="true"
         android:padding="16dp"
         android:visibility="visible"/>
+
+    <!-- Visual Compass ImageView -->
+    <ImageView
+        android:id="@+id/ivCompass"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_above="@+id/btnReCenter"
+        android:layout_alignStart="@+id/btnReCenter"
+        android:layout_alignEnd="@+id/btnReCenter"
+        android:layout_marginBottom="8dp"
+        android:src="@drawable/ic_compass"
+        android:contentDescription="Compass"
+        android:elevation="8dp"
+        android:background="@drawable/fab_background"
+        android:padding="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="visible" />
 
     <!-- Bottom Navigation -->
     <LinearLayout
@@ -177,8 +195,3 @@
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
-
-
-
-
-

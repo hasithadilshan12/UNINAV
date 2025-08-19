@@ -10,6 +10,7 @@
     android:clickable="true"
     android:focusable="true">
 
+    <!-- Location Name Text View -->
     <TextView
         android:id="@+id/tvPanelLocationName"
         android:layout_width="wrap_content"
@@ -19,6 +20,7 @@
         android:textColor="@android:color/black"
         android:text="Location Name" />
 
+    <!-- Location Description Text View -->
     <TextView
         android:id="@+id/tvPanelLocationDescription"
         android:layout_width="wrap_content"
@@ -28,12 +30,25 @@
         android:layout_marginTop="4dp"
         android:text="Location Description" />
 
+    <!-- Location Image View -->
+    <ImageView
+        android:id="@+id/locationImage"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="location_image"
+        android:src="@drawable/ic_image_placeholder"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Action Buttons Layout -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="16dp">
 
+        <!-- Directions Button -->
         <Button
             android:id="@+id/btnPanelDirections"
             android:layout_width="0dp"
@@ -45,6 +60,7 @@
             android:textColor="#FFFFFF"
             android:layout_marginEnd="8dp" />
 
+        <!-- Start Navigation Button -->
         <Button
             android:id="@+id/btnPanelStartNav"
             android:layout_width="0dp"

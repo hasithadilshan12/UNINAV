@@ -3,4 +3,9 @@
     <string name="search_icon_desc">Search</string>
     <string name="back_icon_desc">Back</string>
     <string name="google_maps_key">AIzaSyAIsgi6oyZ9K_E551toxPT0I9obIXipCMg</string>
+    <string name="about_us_text">
+        UniNav is your ultimate campus navigation companion, designed to simplify your journey across the university grounds.
+        Our mission is to help students, staff, and visitors easily find their way to lecture halls, offices, libraries, and other facilities, saving time and reducing stress.
+        \n\nDeveloped by a dedicated team to enhance your university experience.
+    </string>
 </resources>

@@ -45,6 +45,28 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- ImageView for Start Location Image -->
+        <ImageView
+            android:id="@+id/ivStartLocationImage"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="16dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_image_placeholder"
+            android:contentDescription="Start Location Image"
+            android:visibility="gone" />
+
+        <!-- ImageView for Destination Location Image -->
+        <ImageView
+            android:id="@+id/ivDestinationLocationImage"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_image_placeholder"
+            android:contentDescription="Destination Location Image"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/tvEstimatedTime"
             android:layout_width="wrap_content"

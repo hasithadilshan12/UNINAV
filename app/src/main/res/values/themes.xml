@@ -6,4 +6,23 @@
     </style>
 
     <style name="Theme.UNINAV" parent="Base.Theme.UNINAV" />
+
+    <!-- NEW: Custom Dialog Style -->
+    <style name="CustomAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/rounded_dialog_background</item>
+        <item name="android:windowMinWidthMajor">90%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+    </style>
+
+    <!-- NEW: Dark Theme for AppCompatDelegate (for Dark Mode toggle) -->
+    <!-- Note: If your Base.Theme.UNINAV already handles DayNight, this might be redundant
+               or need adjustment. This is for explicit switching with AppCompatDelegate. -->
+    <style name="Theme.UniNav.DayNight" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Inherit from your base theme or define dark mode specific attributes -->
+        <item name="android:windowBackground">#1C1C1E</item> <!-- Dark background color -->
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">#CCCCCC</item>
+        <!-- Add other dark mode colors/styles as needed -->
+    </style>
+
 </resources>

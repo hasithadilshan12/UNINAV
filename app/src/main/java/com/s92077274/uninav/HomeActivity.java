@@ -29,9 +29,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-// import com.google.firebase.firestore.DocumentReference; // Removed
-// import com.google.firebase.firestore.DocumentSnapshot; // Removed
-// import com.google.firebase.firestore.FirebaseFirestore; // Removed
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -39,9 +36,12 @@ import com.s92077274.uninav.models.MapPoint;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * HomeActivity displays the main dashboard of the UniNav app,
+ * including recent searches, a mini-map, and navigation options.
+ */
 public class HomeActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap googleMap;
@@ -56,7 +56,7 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<MapPoint> recentSearchesList;
 
     private FirebaseAuth mAuth;
-    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
+    private FirebaseUserManager firebaseUserManager; // Manages Firebase Firestore user data
 
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_RECENT_SEARCHES = "recent_searches";
@@ -70,7 +70,7 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_home);
 
         mAuth = FirebaseAuth.getInstance();
-        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
+        firebaseUserManager = FirebaseUserManager.getInstance(); // Initialize Firebase user manager
 
         initViews();
         loadRecentSearches();
@@ -90,10 +90,12 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         loadRecentSearches();
         updateRecentSearchesUI();
         applyMapTypeSetting();
-        // Fetch and display the user's profile picture on resume
-        fetchAndDisplayUserProfilePicture();
+        fetchAndDisplayUserProfilePicture(); // Fetch and display the user's profile picture
     }
 
+    /**
+     * Initializes all UI components from the layout.
+     */
     private void initViews() {
         tvSearchHint = findViewById(R.id.tvSearchHint);
         ivProfile = findViewById(R.id.ivProfile);
@@ -106,6 +108,9 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         recyclerRecentSearches = findViewById(R.id.recyclerRecentSearches);
     }
 
+    /**
+     * Sets up click listeners for all interactive UI elements.
+     */
     private void setClickListeners() {
         tvSearchHint.setOnClickListener(v -> {
             Intent searchIntent = new Intent(HomeActivity.this, SearchActivity.class);
@@ -128,15 +133,22 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         navProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
     }
 
+    /**
+     * Callback method called when the Google Map is ready to be used.
+     * Configures map UI, sets default camera position, and adds a marker.
+     * @param map The GoogleMap object.
+     */
     @Override
     public void onMapReady(@NonNull GoogleMap map) {
         googleMap = map;
         applyMapTypeSetting();
 
+        // Configure map UI settings
         googleMap.getUiSettings().setZoomControlsEnabled(false);
         googleMap.getUiSettings().setCompassEnabled(true);
         googleMap.getUiSettings().setMyLocationButtonEnabled(false);
 
+        // Set default camera position to OUSL campus center and add a marker
         LatLng ouslCampusCenter = new LatLng(6.883019826740543, 79.88670615788185);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ouslCampusCenter, 15f));
         googleMap.addMarker(new MarkerOptions()
@@ -145,6 +157,9 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .snippet("Your Campus"));
     }
 
+    /**
+     * Applies the map type setting (Normal or Satellite) loaded from SharedPreferences.
+     */
     private void applyMapTypeSetting() {
         if (googleMap != null) {
             SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -155,12 +170,12 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     /**
-     * Fetches the user's profile picture URL from Firestore and displays it.
+     * Fetches the user's profile picture Base64 string from Firestore and displays it.
+     * If no picture is set or an error occurs, a default placeholder is used.
      */
     private void fetchAndDisplayUserProfilePicture() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            // ⭐ MODIFIED: Use FirebaseUserManager to fetch user profile ⭐
             firebaseUserManager.getUserProfile(user.getUid())
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && task.getResult().exists()) {
@@ -174,33 +189,35 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
                                     if (bitmap != null) {
                                         ivProfile.setImageBitmap(bitmap);
                                     } else {
-                                        Log.e("HomeActivity", "Bitmap decode returned null.");
+                                        Log.e(TAG, "Bitmap decode returned null.");
                                         ivProfile.setImageResource(R.drawable.ic_profile);
                                     }
                                 } catch (Exception e) {
-                                    Log.e("HomeActivity", "Error decoding Base64 image", e);
+                                    Log.e(TAG, "Error decoding Base64 image", e);
                                     ivProfile.setImageResource(R.drawable.ic_profile);
                                 }
                             } else {
-                                Log.d("HomeActivity", "No profile picture set.");
+                                Log.d(TAG, "No profile picture set.");
                                 ivProfile.setImageResource(R.drawable.ic_profile);
                             }
                         } else {
-                            Log.e("HomeActivity", "Failed to fetch document", task.getException());
+                            Log.e(TAG, "Failed to fetch user profile document", task.getException());
                             ivProfile.setImageResource(R.drawable.ic_profile);
                         }
                     });
         }
     }
 
-
-
+    /**
+     * Sets up the RecyclerView for displaying recent searches.
+     */
     private void setupRecyclerView() {
         recentSearchesList = new ArrayList<>();
         recentSearchesAdapter = new RecentSearchesAdapter(recentSearchesList, location -> {
             Log.d(TAG, "Recent search item clicked: " + location.name +
                     " X: " + location.x + ", Y: " + location.y);
 
+            // Navigate to LocationShowActivity with the selected location details
             Intent intent = new Intent(HomeActivity.this, LocationShowActivity.class);
             intent.putExtra("location_name", location.name);
             intent.putExtra("location_lat", location.x);
@@ -213,6 +230,12 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         updateRecentSearchesUI();
     }
 
+    /**
+     * Adds a location to the list of recent searches, maintaining a maximum limit.
+     * Oldest searches are removed if the list exceeds the limit.
+     * @param context The application context.
+     * @param location The MapPoint to be added as a recent search.
+     */
     public static void addRecentSearch(Context context, MapPoint location) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Gson gson = new Gson();
@@ -223,9 +246,11 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d(TAG, "Adding recent search: " + location.name +
                 " X: " + location.x + ", Y: " + location.y);
 
+        // Remove if already exists to add it to the top
         currentList.removeIf(p -> p.name.equals(location.name));
-        currentList.add(0, location);
+        currentList.add(0, location); // Add to the beginning
 
+        // Keep only the most recent searches
         if (currentList.size() > MAX_RECENT_SEARCHES) {
             currentList = currentList.subList(0, MAX_RECENT_SEARCHES);
         }
@@ -234,13 +259,16 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         prefs.edit().putString(KEY_RECENT_SEARCHES, updatedJson).apply();
     }
 
+    /**
+     * Loads the list of recent searches from SharedPreferences.
+     */
     private void loadRecentSearches() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Gson gson = new Gson();
         String json = prefs.getString(KEY_RECENT_SEARCHES, null);
         Type type = new TypeToken<List<MapPoint>>() {}.getType();
         recentSearchesList = (json == null) ? new ArrayList<>() : gson.fromJson(json, type);
-        if (recentSearchesList == null) {
+        if (recentSearchesList == null) { // Ensure list is not null after deserialization
             recentSearchesList = new ArrayList<>();
         }
         for (MapPoint p : recentSearchesList) {
@@ -249,6 +277,9 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    /**
+     * Updates the visibility of the recent searches section and refreshes the RecyclerView.
+     */
     private void updateRecentSearchesUI() {
         if (recentSearchesList.isEmpty()) {
             recentSearchesSection.setVisibility(View.GONE);

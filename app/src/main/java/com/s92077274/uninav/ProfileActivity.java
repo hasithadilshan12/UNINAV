@@ -34,9 +34,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-// import com.google.firebase.firestore.DocumentReference; // Removed
-// import com.google.firebase.firestore.DocumentSnapshot; // Removed
-// import com.google.firebase.firestore.FirebaseFirestore; // Removed
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -53,7 +50,7 @@ public class ProfileActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 2;
 
     private FirebaseAuth mAuth;
-    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
+    private FirebaseUserManager firebaseUserManager;
 
     private Button btnLogout;
     private ImageView btnBack;
@@ -79,14 +76,16 @@ public class ProfileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_profile);
 
         mAuth = FirebaseAuth.getInstance();
-        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
+        firebaseUserManager = FirebaseUserManager.getInstance();
 
         initViews();
         setClickListeners();
         fetchUserProfile();
     }
 
-    // Initialize UI components
+    /**
+     * Initializes all views from the activity_profile.xml layout file.
+     */
     private void initViews() {
         btnLogout = findViewById(R.id.btnLogout);
         btnBack = findViewById(R.id.btnBack);
@@ -101,7 +100,9 @@ public class ProfileActivity extends AppCompatActivity {
         navProfile = findViewById(R.id.navProfile);
     }
 
-    // Set up click listeners for various UI elements
+    /**
+     * Sets up click listeners for all interactive UI elements.
+     */
     private void setClickListeners() {
         btnBack.setOnClickListener(v -> finish());
         llProfileItem.setOnClickListener(v -> showProfileDialog());
@@ -117,7 +118,6 @@ public class ProfileActivity extends AppCompatActivity {
             finish();
         });
 
-        // Navigation bar click listeners
         navHome.setOnClickListener(v -> {
             startActivity(new Intent(ProfileActivity.this, HomeActivity.class));
             finish();
@@ -135,16 +135,17 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    // Fetches the current user's profile data from Firestore
+    /**
+     * Fetches the current user's profile from Firebase. If no profile exists, a default one is created.
+     */
     private void fetchUserProfile() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            // ⭐ MODIFIED: Use FirebaseUserManager to fetch user profile ⭐
             firebaseUserManager.getUserProfile(user.getUid())
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
                             if (task.getResult().exists()) {
-                                currentUserProfile = task.getResult().toObject(UserProfile.class); // Deserialize directly
+                                currentUserProfile = task.getResult().toObject(UserProfile.class);
                             } else {
                                 Toast.makeText(ProfileActivity.this, "User data not found. Creating default profile.", Toast.LENGTH_SHORT).show();
                                 createDefaultUserProfile(user.getUid(), user.getEmail());
@@ -154,7 +155,7 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                     });
         } else {
-            // If no user is logged in, redirect to LoginActivity
+            // If the user is not logged in, navigate back to the login screen.
             Intent logoutIntent = new Intent(ProfileActivity.this, LoginActivity.class);
             logoutIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(logoutIntent);
@@ -162,22 +163,27 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    // Creates a default user profile in Firestore if one doesn't exist
+    /**
+     * Creates a new default user profile in Firestore.
+     * @param uid The user's unique ID.
+     * @param email The user's email address.
+     */
     private void createDefaultUserProfile(String uid, String email) {
-        // ⭐ MODIFIED: Use FirebaseUserManager to save new user profile ⭐
-        firebaseUserManager.saveNewUser(uid, email, "New User") // Use saveNewUser to create default
+        firebaseUserManager.saveNewUser(uid, email, "New User")
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(ProfileActivity.this, "Default profile created.", Toast.LENGTH_SHORT).show();
-                    fetchUserProfile(); // Fetch newly created profile
+                    fetchUserProfile();
                 })
                 .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Failed to create default profile: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
-    // Displays the profile edit dialog
+    /**
+     * Displays a dialog for editing the user's profile information.
+     */
     private void showProfileDialog() {
         if (currentUserProfile == null) {
             Toast.makeText(this, "Profile data not loaded yet. Please wait.", Toast.LENGTH_SHORT).show();
-            fetchUserProfile(); // Try fetching again
+            fetchUserProfile();
             return;
         }
 
@@ -186,7 +192,6 @@ public class ProfileActivity extends AppCompatActivity {
         View dialogView = inflater.inflate(R.layout.dialog_profile_edit, null);
         builder.setView(dialogView);
 
-        // Initialize dialog UI components
         etDialogName = dialogView.findViewById(R.id.etDialogName);
         etDialogEmail = dialogView.findViewById(R.id.etDialogEmail);
         ivDialogProfilePic = dialogView.findViewById(R.id.ivDialogProfilePic);
@@ -194,21 +199,18 @@ public class ProfileActivity extends AppCompatActivity {
         btnSaveProfile = dialogView.findViewById(R.id.btnSaveProfile);
         tvDeleteProfilePic = dialogView.findViewById(R.id.tvDeleteProfilePic);
 
-        // Populate dialog fields with current profile data
         etDialogName.setText(currentUserProfile.getName());
         etDialogEmail.setText(currentUserProfile.getEmail());
-        etDialogEmail.setEnabled(false); // Email is not editable
+        etDialogEmail.setEnabled(false); // Email cannot be edited
 
         loadProfileImageFromBase64(currentUserProfile.getProfilePictureBase64());
 
-        // Show/hide delete profile picture option
         if (currentUserProfile.getProfilePictureBase64() != null && !currentUserProfile.getProfilePictureBase64().isEmpty()) {
             tvDeleteProfilePic.setVisibility(View.VISIBLE);
         } else {
             tvDeleteProfilePic.setVisibility(View.GONE);
         }
 
-        // Set dialog button listeners
         btnEditProfilePic.setOnClickListener(v -> checkPermissionAndPickImage());
         btnSaveProfile.setOnClickListener(v -> saveProfileChanges());
         tvDeleteProfilePic.setOnClickListener(v -> deleteProfilePicture());
@@ -217,7 +219,10 @@ public class ProfileActivity extends AppCompatActivity {
         profileDialog.show();
     }
 
-    // Loads and displays profile image from a Base64 string
+    /**
+     * Loads a profile image from a Base64 string and displays it in the ImageView.
+     * @param base64 The Base64 encoded string of the image.
+     */
     private void loadProfileImageFromBase64(String base64) {
         if (base64 != null && !base64.isEmpty()) {
             try {
@@ -225,14 +230,16 @@ public class ProfileActivity extends AppCompatActivity {
                 Bitmap bmp = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
                 ivDialogProfilePic.setImageBitmap(bmp);
             } catch (Exception e) {
-                ivDialogProfilePic.setImageResource(R.drawable.ic_profile_placeholder); // Fallback on error
+                ivDialogProfilePic.setImageResource(R.drawable.ic_profile_placeholder);
             }
         } else {
-            ivDialogProfilePic.setImageResource(R.drawable.ic_profile_placeholder); // Default placeholder
+            ivDialogProfilePic.setImageResource(R.drawable.ic_profile_placeholder);
         }
     }
 
-    // Checks for necessary permissions before opening image chooser
+    /**
+     * Checks for necessary read media permissions before allowing the user to pick an image.
+     */
     private void checkPermissionAndPickImage() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
@@ -255,24 +262,32 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Handles the result of the permission request.
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openImageChooser(); // Open chooser if permission granted
+                openImageChooser();
             } else {
                 Toast.makeText(this, "Permission denied to access media files.", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    // Opens the image selection activity
+    /**
+     * Opens the system's image chooser to select a profile picture.
+     */
     private void openImageChooser() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
 
+    /**
+     * Handles the result of the image chooser activity.
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -280,13 +295,15 @@ public class ProfileActivity extends AppCompatActivity {
             selectedImageUri = data.getData();
             Glide.with(this)
                     .load(selectedImageUri)
-                    .into(ivDialogProfilePic); // Display selected image
-            tvDeleteProfilePic.setVisibility(View.VISIBLE); // Show delete option
+                    .into(ivDialogProfilePic);
+            tvDeleteProfilePic.setVisibility(View.VISIBLE);
             Toast.makeText(this, "Image selected. Click 'Save Changes' to upload.", Toast.LENGTH_LONG).show();
         }
     }
 
-    // Saves profile changes (name and/or profile picture) to Firestore
+    /**
+     * Saves the profile changes (name and/or profile picture) to Firebase.
+     */
     private void saveProfileChanges() {
         String newName = etDialogName.getText().toString().trim();
         FirebaseUser user = mAuth.getCurrentUser();
@@ -314,14 +331,13 @@ public class ProfileActivity extends AppCompatActivity {
         Toast.makeText(this, "Saving changes...", Toast.LENGTH_SHORT).show();
 
         if (imageSelected) {
-            new ImageToBase64Task(user.getUid(), newName, nameChanged).execute(selectedImageUri); // Convert and upload image
+            new ImageToBase64Task(user.getUid(), newName, nameChanged).execute(selectedImageUri);
         } else {
             if (nameChanged) {
-                // ⭐ MODIFIED: Use FirebaseUserManager to update name only ⭐
                 firebaseUserManager.updateUserName(user.getUid(), newName)
                         .addOnSuccessListener(aVoid -> {
                             Toast.makeText(ProfileActivity.this, "Name updated successfully!", Toast.LENGTH_SHORT).show();
-                            fetchUserProfile(); // Refresh profile data
+                            fetchUserProfile();
                             if (profileDialog != null) profileDialog.dismiss();
                         })
                         .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Failed to update name: " + e.getMessage(), Toast.LENGTH_LONG).show());
@@ -329,14 +345,13 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    // ⭐ REMOVED: updateNameOnly() method is no longer needed, logic moved to FirebaseUserManager ⭐
-
-
-    // AsyncTask to convert image URI to Base64 and then update profile
+    /**
+     * AsyncTask to handle the conversion of an image from a URI to a Base64 string in the background.
+     */
     private class ImageToBase64Task extends AsyncTask<Uri, Void, String> {
         private final String userId;
         private final String newName;
-        private final boolean nameChanged; // Added to indicate if name also needs updating
+        private final boolean nameChanged;
 
         ImageToBase64Task(String userId, String newName, boolean nameChanged) {
             this.userId = userId;
@@ -350,14 +365,14 @@ public class ProfileActivity extends AppCompatActivity {
             try {
                 InputStream inputStream = getContentResolver().openInputStream(imageUri);
                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                if (inputStream != null) inputStream.close(); // Close stream after use
+                if (inputStream != null) inputStream.close();
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // Compress image
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
                 byte[] imageBytes = baos.toByteArray();
                 baos.close();
 
-                return Base64.encodeToString(imageBytes, Base64.DEFAULT); // Encode to Base64
+                return Base64.encodeToString(imageBytes, Base64.DEFAULT);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -367,7 +382,6 @@ public class ProfileActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String base64Image) {
             if (base64Image != null) {
-                // ⭐ MODIFIED: Use FirebaseUserManager to update profile picture and potentially name ⭐
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("profilePictureBase64", base64Image);
                 if (nameChanged) {
@@ -379,7 +393,7 @@ public class ProfileActivity extends AppCompatActivity {
                             Toast.makeText(ProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                             fetchUserProfile();
                             if (profileDialog != null) profileDialog.dismiss();
-                            selectedImageUri = null; // Clear selected URI after upload
+                            selectedImageUri = null;
                         })
                         .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_LONG).show());
             } else {
@@ -388,7 +402,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    // Deletes the user's profile picture from Firestore
+    /**
+     * Deletes the user's profile picture from Firebase.
+     */
     private void deleteProfilePicture() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null || currentUserProfile == null || TextUtils.isEmpty(currentUserProfile.getProfilePictureBase64())) {
@@ -396,13 +412,11 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        // Show confirmation dialog before deleting
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Profile Picture")
                 .setMessage("Are you sure you want to delete your profile picture?")
                 .setCancelable(true)
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    // ⭐ MODIFIED: Use FirebaseUserManager to delete profile picture ⭐
                     firebaseUserManager.deleteProfilePicture(user.getUid())
                             .addOnSuccessListener(aVoid -> {
                                 Toast.makeText(ProfileActivity.this, "Profile picture deleted.", Toast.LENGTH_SHORT).show();
@@ -420,21 +434,9 @@ public class ProfileActivity extends AppCompatActivity {
         alert.show();
     }
 
-    // Displays the notifications dialog (removed as per previous instruction)
-    private void showNotificationsDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialog);
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_notifications, null);
-        builder.setView(dialogView);
-
-        Button btnNotificationsClose = dialogView.findViewById(R.id.btnNotificationsClose);
-        AlertDialog dialog = builder.create();
-        btnNotificationsClose.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
-    }
-
-    // Displays the settings dialog (for map type selection)
+    /**
+     * Displays a dialog for changing map settings.
+     */
     private void showSettingsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialog);
         LayoutInflater inflater = getLayoutInflater();
@@ -443,11 +445,9 @@ public class ProfileActivity extends AppCompatActivity {
 
         Switch switchSatelliteMode = dialogView.findViewById(R.id.switchSatelliteMode);
 
-        // Set switch state based on saved map type
         boolean isSatelliteEnabled = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getInt(KEY_MAP_TYPE, GoogleMap.MAP_TYPE_NORMAL) == GoogleMap.MAP_TYPE_SATELLITE;
         switchSatelliteMode.setChecked(isSatelliteEnabled);
 
-        // Listen for switch changes to save map type setting
         switchSatelliteMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             saveMapTypeSetting(isChecked);
             if (isChecked) {
@@ -464,7 +464,10 @@ public class ProfileActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Saves the selected map type setting
+    /**
+     * Saves the selected map type to SharedPreferences.
+     * @param isSatellite True if satellite view is enabled, false otherwise.
+     */
     private void saveMapTypeSetting(boolean isSatellite) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -473,7 +476,9 @@ public class ProfileActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    // Displays the "About Us" dialog
+    /**
+     * Displays an "About Us" dialog with information about the app.
+     */
     private void showAboutUsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialog);
         LayoutInflater inflater = getLayoutInflater();
@@ -481,7 +486,7 @@ public class ProfileActivity extends AppCompatActivity {
         builder.setView(dialogView);
 
         TextView tvAboutUsContent = dialogView.findViewById(R.id.tvAboutUsContent);
-        tvAboutUsContent.setText(getString(R.string.about_us_text)); // Set content from string resource
+        tvAboutUsContent.setText(getString(R.string.about_us_text));
 
         Button btnAboutUsClose = dialogView.findViewById(R.id.btnAboutUsClose);
         AlertDialog dialog = builder.create();
@@ -490,7 +495,9 @@ public class ProfileActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Displays the "Help" dialog
+    /**
+     * Displays a "Help" dialog for user assistance.
+     */
     private void showHelpDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialog);
         LayoutInflater inflater = getLayoutInflater();

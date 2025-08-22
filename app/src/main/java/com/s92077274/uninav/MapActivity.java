@@ -19,7 +19,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-// import android.view.animation.RotateAnimation; // Removed - now handled by CompassSensorManager
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -27,12 +26,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-// Removed direct sensor imports - now handled by CompassSensorManager
-// import android.hardware.Sensor;
-// import android.hardware.SensorEvent;
-// import android.hardware.SensorEventListener;
-// import android.hardware.SensorManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -56,12 +49,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Removed SensorEventListener interface from MapActivity
 public class MapActivity extends AppCompatActivity implements
         OnMapReadyCallback,
         GoogleMap.OnMarkerClickListener {
 
-    // Map and location related variables
+    // Map and location variables
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE_MAP = 1;
@@ -80,12 +72,7 @@ public class MapActivity extends AppCompatActivity implements
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_MAP_TYPE = "map_type";
 
-    // ⭐ NEW: Instance of our custom CompassSensorManager ⭐
     private CompassSensorManager compassSensorManager;
-    // float currentDegree removed - now managed by CompassSensorManager internally,
-    // or by the ImageView's animation directly. If you need raw degrees in MapActivity,
-    // use the OnHeadingChangeListener in the CompassSensorManager constructor.
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,25 +85,10 @@ public class MapActivity extends AppCompatActivity implements
         initMapPointsFromAppPaths();
         setClickListeners();
 
-        // ⭐ MODIFIED: Initialize CompassSensorManager ⭐
-        // Pass the ImageView that needs to be rotated
+        // Initialize CompassSensorManager and pass the ImageView to be rotated
         compassSensorManager = new CompassSensorManager(this, ivCompass, degrees -> {
-            // Optional: If MapActivity needs to do something else with the heading besides rotating the ImageView,
-            // you can implement it here. For now, the ImageView rotation is handled internally by CompassSensorManager.
-            // Example: Log.d("MapActivity", "Compass Heading: " + degrees);
-            // If you want to rotate the map camera with the compass:
-            // if (googleMap != null && currentUserLatLng != null) {
-            //     googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
-            //             new com.google.android.gms.maps.model.CameraPosition.Builder()
-            //                     .target(currentUserLatLng)
-            //                     .zoom(googleMap.getCameraPosition().zoom)
-            //                     .bearing(degrees)
-            //                     .tilt(0)
-            //                     .build()
-            //     ));
-            // }
+            // Optional: Heading change listener can be implemented here
         });
-
 
         // Set up map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -128,10 +100,6 @@ public class MapActivity extends AppCompatActivity implements
         requestLocationPermission();
     }
 
-
-    // ⭐ REMOVED: setupCompassSensors() method is no longer needed ⭐
-
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -142,7 +110,7 @@ public class MapActivity extends AppCompatActivity implements
             googleMap.setMapType(mapType);
         }
 
-        // ⭐ MODIFIED: Start the custom CompassSensorManager ⭐
+        // Start the custom CompassSensorManager
         if (compassSensorManager != null) {
             compassSensorManager.start();
         }
@@ -151,14 +119,11 @@ public class MapActivity extends AppCompatActivity implements
     @Override
     protected void onPause() {
         super.onPause();
-        // ⭐ MODIFIED: Stop the custom CompassSensorManager ⭐
+        // Stop the custom CompassSensorManager
         if (compassSensorManager != null) {
             compassSensorManager.stop();
         }
     }
-
-    // ⭐ REMOVED: onSensorChanged and onAccuracyChanged are no longer implemented directly here ⭐
-    // The CompassSensorManager handles these internally.
 
     // Initialize all view references
     private void initViews() {
@@ -182,21 +147,20 @@ public class MapActivity extends AppCompatActivity implements
         });
 
         ivCompass.setOnClickListener(v -> {
-            // ⭐ MODIFIED: Now uses the heading from CompassSensorManager for orienting map ⭐
+            // Use the heading from CompassSensorManager for orienting the map
             if (googleMap != null && currentUserLatLng != null && compassSensorManager != null) {
-                float currentMapBearing = googleMap.getCameraPosition().bearing;
-                float targetBearing = compassSensorManager.getLastHeadingDegrees(); // Get device's current heading
+                float targetBearing = compassSensorManager.getLastHeadingDegrees();
                 googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
                         new com.google.android.gms.maps.model.CameraPosition.Builder()
                                 .target(currentUserLatLng)
                                 .zoom(googleMap.getCameraPosition().zoom)
-                                .bearing(targetBearing) // Orient map to device's current heading
+                                .bearing(targetBearing)
                                 .tilt(0)
                                 .build()
                 ));
                 Toast.makeText(this, "Map oriented to device heading", Toast.LENGTH_SHORT).show();
             } else if (googleMap != null && currentUserLatLng != null) {
-                // Fallback if compassSensorManager is null, orient map North
+                // Fallback to orienting map North
                 googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
                         new com.google.android.gms.maps.model.CameraPosition.Builder()
                                 .target(currentUserLatLng)
@@ -245,24 +209,6 @@ public class MapActivity extends AppCompatActivity implements
         }
     }
 
-    // ⭐ REMOVED/MODIFIED: orientMapNorth() logic is now handled in ivCompass click listener ⭐
-    private void orientMapNorth() {
-        if (googleMap != null && currentUserLatLng != null) {
-            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
-                    new com.google.android.gms.maps.model.CameraPosition.Builder()
-                            .target(currentUserLatLng)
-                            .zoom(googleMap.getCameraPosition().zoom)
-                            .bearing(0)
-                            .tilt(0)
-                            .build()
-            ));
-            Toast.makeText(this, "Map oriented North", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Current location not available for map orientation.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
     // Load map points from AppPaths utility class
     private void initMapPointsFromAppPaths() {
         mapPoints = new ArrayList<>();
@@ -290,6 +236,9 @@ public class MapActivity extends AppCompatActivity implements
         googleMap.getUiSettings().setCompassEnabled(true);
         googleMap.getUiSettings().setRotateGesturesEnabled(true);
         googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+        // Move zoom controls higher
+        googleMap.setPadding(0, 0, 30, 650);
 
         // Set up map interactions
         googleMap.setOnMarkerClickListener(this);
@@ -478,30 +427,29 @@ public class MapActivity extends AppCompatActivity implements
         locationImage.setVisibility(View.VISIBLE);
 
         // Set up button click handlers
-        // "Directions" button always opens the Start Location Dialog
         btnPanelDirections.setOnClickListener(v -> {
             bottomSheetDialog.dismiss();
             showStartLocationDialog(destinationPoint, DestinationActivity.class);
         });
 
-        // "Start" button now directly attempts live navigation or toasts if location is off
+        // "Start" button now directly attempts live navigation
         btnPanelStartNav.setOnClickListener(v -> {
             bottomSheetDialog.dismiss();
-            handleDirectNavigationStart(destinationPoint); // Call new method for direct start
+            handleDirectNavigationStart(destinationPoint);
         });
 
         bottomSheetDialog.show();
     }
 
-    // Handles direct start of navigation (bypassing start location dialog)
+    // Handles direct start of navigation
     private void handleDirectNavigationStart(MapPoint destinationPoint) {
-        // First, check if global device location services are enabled
+        // Check if global device location services are enabled
         if (!isLocationServicesEnabled()) {
             Toast.makeText(this, "Please enable device location services to start navigation.", Toast.LENGTH_LONG).show();
             return;
         }
 
-        // Then, check if we have a current user location
+        // Check if a current user location is available
         if (currentUserLatLng != null) {
             MapPoint nearestCampusPoint = AppPaths.findNearestMapPoint(currentUserLatLng);
 
@@ -523,10 +471,10 @@ public class MapActivity extends AppCompatActivity implements
             }
 
             ArrayList<LatLng> finalRoute = new ArrayList<>(actualRoute);
-            // Prepend current user location to the route if it's not the first point
+            // Prepend current user location to the route
             if (!finalRoute.isEmpty() && !finalRoute.get(0).equals(currentUserLatLng)) {
                 finalRoute.add(0, currentUserLatLng);
-            } else if (finalRoute.isEmpty()) { // Handle case where route is effectively just current to destination
+            } else if (finalRoute.isEmpty()) {
                 finalRoute.add(currentUserLatLng);
                 finalRoute.add(new LatLng(destinationPoint.x, destinationPoint.y));
             }
@@ -535,18 +483,16 @@ public class MapActivity extends AppCompatActivity implements
             proceedToNavigation(
                     "Your Current Location",
                     (float) currentUserLatLng.latitude, (float) currentUserLatLng.longitude,
-                    true, // isLiveLocation is true
+                    true,
                     destinationPoint,
                     NavigationActivity.class,
                     finalRoute
             );
         } else {
-            // If location services are ON but currentUserLatLng is still null, it means location is not yet available.
-            // This can happen if getLastLocation() hasn't returned yet, or GPS is still acquiring.
+            // Location services are ON but location data is not yet available
             Toast.makeText(this, "Your current location is not yet available. Please try again or ensure GPS signal.", Toast.LENGTH_LONG).show();
         }
     }
-
 
     // Show dialog to select start location (Used for "Directions" flow)
     private void showStartLocationDialog(MapPoint destinationPoint, Class<?> targetActivityClass) {
@@ -577,18 +523,15 @@ public class MapActivity extends AppCompatActivity implements
 
         AlertDialog dialog = builder.create();
 
-        // Handle text changes in search field
+        // Handle text changes in search field to update button states
         etStartLocation.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
                 boolean isEmpty = s.toString().trim().isEmpty();
-                boolean locationServicesOn = isLocationServicesEnabled(); // Check device location status
+                boolean locationServicesOn = isLocationServicesEnabled();
 
-                // "Use Current Location" button logic
-                // Enabled if location services are ON AND a location is available AND the input is empty
                 btnUseCurrentLocation.setEnabled(locationServicesOn && isEmpty && currentUserLatLng != null);
                 if (!locationServicesOn) {
                     btnUseCurrentLocation.setText("Enable Device Location");
@@ -598,13 +541,8 @@ public class MapActivity extends AppCompatActivity implements
                     btnUseCurrentLocation.setText("Use My Current Location");
                 }
 
-                // "Confirm Selected Location" button logic
-                // Enabled if input is not empty AND a valid predefined point is selected
-                // This does NOT depend on isLocationServicesEnabled() as it can be a simulated route for DIRECTIONS preview
                 boolean isValidPointSelected = AppPaths.getMapPointByName(s.toString().trim()) != null;
                 btnConfirmStart.setEnabled(!isEmpty && isValidPointSelected);
-
-                // Set button text explicitly if needed, otherwise rely on default from layout
                 btnConfirmStart.setText("Confirm Selected Location");
             }
         });
@@ -646,7 +584,7 @@ public class MapActivity extends AppCompatActivity implements
                         (float) currentUserLatLng.latitude, (float) currentUserLatLng.longitude,
                         true,
                         destinationPoint,
-                        targetActivityClass, // targetActivityClass is DestinationActivity for directions
+                        targetActivityClass,
                         finalRoute
                 );
             } else {
@@ -656,7 +594,6 @@ public class MapActivity extends AppCompatActivity implements
 
         // Handle confirm button click
         btnConfirmStart.setOnClickListener(v -> {
-            // For directions preview, selecting a predefined start does NOT require live location to be ON
             String selectedStart = etStartLocation.getText().toString().trim();
             MapPoint startPoint = AppPaths.getMapPointByName(selectedStart);
 
@@ -676,9 +613,9 @@ public class MapActivity extends AppCompatActivity implements
                 proceedToNavigation(
                         startPoint.name,
                         startPoint.x, startPoint.y,
-                        false, // isLiveLocation is false for predefined start
+                        false,
                         destinationPoint,
-                        targetActivityClass, // targetActivityClass is DestinationActivity for directions
+                        targetActivityClass,
                         route
                 );
             } else {
@@ -686,8 +623,8 @@ public class MapActivity extends AppCompatActivity implements
             }
         });
 
-        // Manually trigger afterTextChanged once to set initial button states
-        etStartLocation.setText(etStartLocation.getText()); // Trigger to update button states initially
+        // Trigger afterTextChanged once to set initial button states
+        etStartLocation.setText(etStartLocation.getText());
 
         dialog.show();
     }
@@ -698,18 +635,15 @@ public class MapActivity extends AppCompatActivity implements
                                      Class<?> targetActivityClass, List<LatLng> routePath) {
         Intent intent = new Intent(this, targetActivityClass);
 
-        // Add destination data
         intent.putExtra("destination_name", destinationPoint.name);
         intent.putExtra("destination_lat", destinationPoint.x);
         intent.putExtra("destination_lng", destinationPoint.y);
 
-        // Add start location data
         intent.putExtra("start_location_name", startLocationName);
         intent.putExtra("user_lat", startLat);
         intent.putExtra("user_lng", startLng);
         intent.putExtra("is_live_location", isLiveLocation);
 
-        // Add route path
         intent.putParcelableArrayListExtra("route_path", new ArrayList<>(routePath));
 
         startActivity(intent);

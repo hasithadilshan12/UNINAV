@@ -1,4 +1,4 @@
-package com.s92077274.uninav; // Or com.s92077274.uninav.utils; if you create a new package
+package com.s92077274.uninav;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -7,27 +7,28 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 import android.view.animation.RotateAnimation;
-import android.widget.ImageView; // Added for direct image manipulation
+import android.widget.ImageView;
 
 /**
  * Manages accelerometer and magnetometer sensors to provide device heading (azimuth).
- * It also handles the rotation animation of an ImageView to act as a compass.
+ * Handles the rotation animation of a specified ImageView to act as a compass.
  */
 public class CompassSensorManager implements SensorEventListener {
 
+    private static final String TAG = "CompassSensorManager";
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Sensor magnetometer;
 
-    private float[] gravityValues;
-    private float[] geomagneticValues;
-    private float lastAzimuthDegrees = 0f; // Store the last reported azimuth for animation
+    private float[] gravityValues;      // Accelerometer readings
+    private float[] geomagneticValues;  // Magnetometer readings
+    private float lastAzimuthDegrees = 0f; // Last reported azimuth for smooth animation
 
-    private ImageView compassImageView; // The ImageView to rotate
-    private OnHeadingChangeListener headingListener; // Optional: Callback for raw heading data
+    private ImageView compassImageView; // ImageView to rotate as a compass
+    private OnHeadingChangeListener headingListener; // Optional callback for raw heading data
 
     /**
-     * Interface for listeners who want to receive raw heading (azimuth) changes.
+     * Interface for listeners to receive device heading (azimuth) changes in degrees.
      */
     public interface OnHeadingChangeListener {
         void onHeadingChanged(float degrees);
@@ -36,7 +37,7 @@ public class CompassSensorManager implements SensorEventListener {
     /**
      * Constructor for CompassSensorManager.
      * @param context The application context.
-     * @param imageView The ImageView that will be rotated to act as a compass.
+     * @param imageView The ImageView to be rotated as a compass.
      */
     public CompassSensorManager(Context context, ImageView imageView) {
         this.compassImageView = imageView;
@@ -44,55 +45,65 @@ public class CompassSensorManager implements SensorEventListener {
     }
 
     /**
-     * Constructor for CompassSensorManager with a custom heading listener.
+     * Constructor for CompassSensorManager with an optional custom heading listener.
      * @param context The application context.
-     * @param imageView The ImageView that will be rotated to act as a compass.
+     * @param imageView The ImageView to be rotated as a compass.
      * @param listener An optional listener to receive raw heading data.
      */
     public CompassSensorManager(Context context, ImageView imageView, OnHeadingChangeListener listener) {
-        this(context, imageView); // Call the other constructor
+        this(context, imageView); // Calls the primary constructor
         this.headingListener = listener;
     }
 
-    // Initializes sensor manager and retrieves accelerometer and magnetometer
+    /**
+     * Initializes the SensorManager and retrieves accelerometer and magnetometer sensors.
+     * Logs warnings if essential sensors are not found.
+     * @param context The application context.
+     */
     private void initSensors(Context context) {
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
             if (accelerometer == null || magnetometer == null) {
-                Log.w("CompassSensorManager", "Accelerometer or Magnetometer not available. Compass may not function.");
+                Log.w(TAG, "Accelerometer or Magnetometer not available. Compass functionality may be limited.");
             } else {
-                Log.d("CompassSensorManager", "Accelerometer and Magnetometer sensors initialized.");
+                Log.d(TAG, "Accelerometer and Magnetometer sensors initialized.");
             }
         } else {
-            Log.e("CompassSensorManager", "SensorManager not found. Device sensors may not be available.");
+            Log.e(TAG, "SensorManager not found. Device sensors may not be available.");
         }
     }
 
     /**
-     * Starts listening for sensor updates. Should be called in onResume().
+     * Starts listening for sensor updates. Call in onResume() to activate sensors.
      */
     public void start() {
         if (sensorManager != null && accelerometer != null && magnetometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
             sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
-            Log.d("CompassSensorManager", "Sensor listeners registered.");
+            Log.d(TAG, "Sensor listeners registered.");
         } else {
-            Log.w("CompassSensorManager", "Cannot start sensors: SensorManager or required sensors are null.");
+            Log.w(TAG, "Cannot start sensors: SensorManager or required sensors are null.");
         }
     }
 
     /**
-     * Stops listening for sensor updates. Should be called in onPause() to save battery.
+     * Stops listening for sensor updates. Call in onPause() to conserve battery.
      */
     public void stop() {
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
-            Log.d("CompassSensorManager", "Sensor listeners unregistered.");
+            Log.d(TAG, "Sensor listeners unregistered.");
         }
     }
 
+    /**
+     * Called when sensor values change.
+     * Processes accelerometer and magnetometer data to calculate azimuth and rotates
+     * the compass ImageView. Notifies listeners if registered.
+     * @param event The SensorEvent containing new sensor data.
+     */
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
@@ -104,48 +115,50 @@ public class CompassSensorManager implements SensorEventListener {
 
         if (gravityValues != null && geomagneticValues != null) {
             float[] rotationMatrix = new float[9];
-            // No need for inclinationMatrix if only azimuth is required
             if (SensorManager.getRotationMatrix(rotationMatrix, null, gravityValues, geomagneticValues)) {
                 float[] orientation = new float[3];
                 SensorManager.getOrientation(rotationMatrix, orientation);
 
-                float azimuthInRad = orientation[0]; // Azimuth in radians
-                float azimuthInDeg = (float) Math.toDegrees(azimuthInRad);
+                float azimuthInDeg = (float) Math.toDegrees(orientation[0]);
                 azimuthInDeg = (azimuthInDeg + 360) % 360; // Normalize to 0-360 degrees
 
-                // Rotate the ImageView to act as a compass
+                // Rotate ImageView for compass animation
                 if (compassImageView != null) {
                     RotateAnimation ra = new RotateAnimation(
-                            lastAzimuthDegrees, // from degree
-                            -azimuthInDeg,      // to degree (negative because compass rotates opposite to map bearing)
+                            lastAzimuthDegrees, // Start angle
+                            -azimuthInDeg,      // End angle (negative for compass rotation)
                             RotateAnimation.RELATIVE_TO_SELF, 0.5f,
                             RotateAnimation.RELATIVE_TO_SELF, 0.5f);
                     ra.setDuration(250); // Animation duration
-                    ra.setFillAfter(true); // Keep the new orientation
+                    ra.setFillAfter(true); // Retain new orientation
                     compassImageView.startAnimation(ra);
                 }
-                lastAzimuthDegrees = -azimuthInDeg; // Update for the next animation cycle
+                lastAzimuthDegrees = -azimuthInDeg; // Update for next animation
 
-                // Notify the listener if one is set
+                // Notify listener with positive heading
                 if (headingListener != null) {
-                    headingListener.onHeadingChanged(azimuthInDeg); // Pass positive degrees
+                    headingListener.onHeadingChanged(azimuthInDeg);
                 }
             }
         }
     }
 
+    /**
+     * Called when the accuracy of a sensor changes.
+     * Currently, this method only logs the change.
+     * @param sensor The sensor whose accuracy has changed.
+     * @param accuracy The new accuracy of the sensor.
+     */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Optional: Implement logic here if you need to react to sensor accuracy changes
-        Log.d("CompassSensorManager", "Accuracy changed for " + sensor.getName() + ": " + accuracy);
+        Log.d(TAG, "Accuracy changed for " + sensor.getName() + ": " + accuracy);
     }
 
     /**
-     * Returns the last calculated azimuth in degrees (0-360).
-     * @return The last known heading in degrees.
+     * Returns the last calculated azimuth (heading) in degrees, normalized to 0-360.
+     * @return The last known heading in degrees (0-360).
      */
     public float getLastHeadingDegrees() {
-        return (lastAzimuthDegrees + 360) % 360; // Return positive degrees
+        return (lastAzimuthDegrees + 360) % 360; // Ensure positive degrees
     }
 }
-

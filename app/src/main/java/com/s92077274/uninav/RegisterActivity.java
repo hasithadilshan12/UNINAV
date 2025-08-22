@@ -13,17 +13,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-// import com.google.firebase.firestore.FirebaseFirestore; // Removed - now handled by FirebaseUserManager
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -33,7 +27,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView tvLogin;
 
     private FirebaseAuth mAuth;
-    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
+    private FirebaseUserManager firebaseUserManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,13 +35,15 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
         mAuth = FirebaseAuth.getInstance();
-        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
+        firebaseUserManager = FirebaseUserManager.getInstance();
 
         initViews();
         setClickListeners();
     }
 
-    // Initialize UI components
+    /**
+     * Initializes all views from the activity_register.xml layout.
+     */
     private void initViews() {
         etRegisterName = findViewById(R.id.etRegisterName);
         etRegisterEmail = findViewById(R.id.etRegisterEmail);
@@ -57,7 +53,9 @@ public class RegisterActivity extends AppCompatActivity {
         tvLogin = findViewById(R.id.tvLogin);
     }
 
-    // Set up click listeners for buttons
+    /**
+     * Sets up click listeners for the register button and the login text view.
+     */
     private void setClickListeners() {
         btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -76,13 +74,14 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
-    // Handles user registration
+    /**
+     * Validates user input and attempts to register a new user with Firebase Authentication.
+     */
     private void registerUser() {
         String name = etRegisterName.getText().toString().trim();
         String email = etRegisterEmail.getText().toString().trim();
         String password = etRegisterPassword.getText().toString().trim();
 
-        // Validate input fields
         if (TextUtils.isEmpty(name)) {
             etRegisterName.setError("Name is required");
             etRegisterName.requestFocus();
@@ -113,23 +112,19 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // Show progress bar and disable button
         progressBarRegister.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
 
-        // Create user with email and password in Firebase Authentication
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            // Registration successful
                             FirebaseUser user = mAuth.getCurrentUser();
                             if (user != null) {
-                                // ⭐ MODIFIED: Use FirebaseUserManager to save user details to Firestore ⭐
+                                // Save new user details to Firestore after successful authentication.
                                 firebaseUserManager.saveNewUser(user.getUid(), email, name)
                                         .addOnSuccessListener(aVoid -> {
-                                            // User data saved successfully, sign out and navigate to login
                                             mAuth.signOut();
                                             progressBarRegister.setVisibility(View.GONE);
                                             btnRegister.setEnabled(true);
@@ -143,8 +138,8 @@ public class RegisterActivity extends AppCompatActivity {
                                             finish();
                                         })
                                         .addOnFailureListener(e -> {
-                                            // Error saving user data, sign out and show error
-                                            mAuth.signOut(); // Sign out the newly created auth user as profile save failed
+                                            // Handle Firestore save failure.
+                                            mAuth.signOut();
                                             progressBarRegister.setVisibility(View.GONE);
                                             btnRegister.setEnabled(true);
                                             Toast.makeText(RegisterActivity.this,
@@ -153,7 +148,7 @@ public class RegisterActivity extends AppCompatActivity {
                                         });
                             }
                         } else {
-                            // Registration failed
+                            // Handle authentication failure.
                             progressBarRegister.setVisibility(View.GONE);
                             btnRegister.setEnabled(true);
                             Toast.makeText(RegisterActivity.this,
@@ -164,13 +159,12 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-    // ⭐ REMOVED: saveUserToFirestore() method is no longer needed, logic moved to FirebaseUserManager ⭐
-
-
+    /**
+     * Overrides the default back button behavior to navigate to the LoginActivity.
+     */
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        // Navigate to LoginActivity when back button is pressed
         Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();

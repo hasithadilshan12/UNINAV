@@ -19,7 +19,7 @@ public class ImageUtils {
         LOCATION_IMAGE_MAP.put("CRC Office", "crc_office_image");
         LOCATION_IMAGE_MAP.put("Main Entrance", "main_entrance_image");
         LOCATION_IMAGE_MAP.put("Public Information Office ,Financial Office", "public_info_office_image");
-        LOCATION_IMAGE_MAP.put("Student Registration Office", "student_reg_office_image");
+        LOCATION_IMAGE_MAP.put("Student Registration Office", "student_regoffice_image");
         LOCATION_IMAGE_MAP.put("Industry Liaison Center", "industry_liaison_center_image");
         LOCATION_IMAGE_MAP.put("Student Information Center", "student_info_center_image");
         LOCATION_IMAGE_MAP.put("Cafeteria 1", "cafeteria1_image");
@@ -47,7 +47,7 @@ public class ImageUtils {
         LOCATION_IMAGE_MAP.put("Block 2 Department of Civil Engineering Laboratories", "block2_civil_eng_lab_image");
         LOCATION_IMAGE_MAP.put("Faculty Of Education", "faculty_education_image");
         LOCATION_IMAGE_MAP.put("Pre school OUSL", "pre_school_ousl_image");
-        LOCATION_IMAGE_MAP.put("Open University Student Vehicle Park", "student_vehicle_park_image");
+        LOCATION_IMAGE_MAP.put("Open University Student Vehicle Park", "student_carpark_image");
         LOCATION_IMAGE_MAP.put("Printing Press Open University", "printing_press_image");
         LOCATION_IMAGE_MAP.put("Medical Center and staff Day care", "medical_center_daycare_image");
         LOCATION_IMAGE_MAP.put("Examination Hall 02", "exam_hall02_image");
@@ -55,7 +55,7 @@ public class ImageUtils {
         LOCATION_IMAGE_MAP.put("The Open University Sri Lanka Press", "ousl_press_image");
         LOCATION_IMAGE_MAP.put("Course Material Distribution Centre", "course_material_dist_center_image");
         LOCATION_IMAGE_MAP.put(" Budu Medura", "budu_medura_image");
-        LOCATION_IMAGE_MAP.put("Exam Hall 01", "exam_hall01_image");
+        LOCATION_IMAGE_MAP.put("Exam Hall 01", "examhall_01_image");
         LOCATION_IMAGE_MAP.put("Automobile Laboratory", "automobile_lab_image");
         LOCATION_IMAGE_MAP.put("Science and Technology Building", "science_tech_building_image");
         LOCATION_IMAGE_MAP.put(" Examination Hall 22", "exam_hall22_image");

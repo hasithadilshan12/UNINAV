@@ -1,4 +1,4 @@
-package com.s92077274.uninav; // Or com.s92077274.uninav.data;
+package com.s92077274.uninav;
 
 import android.util.Log;
 
@@ -6,7 +6,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.s92077274.uninav.models.UserProfile; // Ensure this import path is correct
+import com.s92077274.uninav.models.UserProfile;
 
 import java.util.HashMap;
 import java.util.Map;

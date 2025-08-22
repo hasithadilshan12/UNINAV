@@ -14,19 +14,12 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-// import android.view.animation.RotateAnimation; // Removed - now handled by CompassSensorManager
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
-
-// Removed direct sensor imports - now handled by CompassSensorManager
-// import android.hardware.Sensor;
-// import android.hardware.SensorEvent;
-// import android.hardware.SensorEventListener;
-// import android.hardware.SensorManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -54,8 +47,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-
-// Removed SensorEventListener interface from NavigationActivity
 public class NavigationActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap googleMap;
@@ -92,10 +83,8 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_MAP_TYPE = "map_type";
 
-    // ⭐ NEW: Instance of our custom CompassSensorManager ⭐
-    private CompassSensorManager compassSensorManager;
-    // float currentCompassDegree removed - now managed by CompassSensorManager internally
 
+    private CompassSensorManager compassSensorManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,23 +97,8 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         retrieveIntentData();
         setClickListeners();
 
-        // ⭐ MODIFIED: Initialize CompassSensorManager ⭐
         // Pass the ImageView that needs to be rotated
         compassSensorManager = new CompassSensorManager(this, ivCompassNav, degrees -> {
-            // Optional: If NavigationActivity needs to do something else with the heading besides rotating the ImageView,
-            // you can implement it here.
-            // Example: Log.d("NavigationActivity", "Compass Heading: " + degrees);
-            // If you want to rotate the map camera with the compass:
-            // if (googleMap != null && lastKnownLocation != null) {
-            //     googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
-            //             new com.google.android.gms.maps.model.CameraPosition.Builder()
-            //                     .target(lastKnownLocation)
-            //                     .zoom(googleMap.getCameraPosition().zoom)
-            //                     .bearing(degrees) // Orient map to device's current heading
-            //                     .tilt(0)
-            //                     .build()
-            //     ));
-            // }
         });
 
 
@@ -245,9 +219,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         });
     }
 
-    // ⭐ REMOVED: onSensorChanged and onAccuracyChanged are no longer implemented directly here ⭐
     // The CompassSensorManager handles these internally.
-
 
     @Override
     protected void onResume() {
@@ -258,7 +230,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
             googleMap.setMapType(mapType);
         }
 
-        // ⭐ MODIFIED: Start the custom CompassSensorManager ⭐
+        // Start the custom CompassSensorManager
         if (compassSensorManager != null) {
             compassSensorManager.start();
         }
@@ -283,7 +255,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     protected void onPause() {
         super.onPause();
-        // ⭐ MODIFIED: Stop the custom CompassSensorManager ⭐
+        // Stop the custom CompassSensorManager
         if (compassSensorManager != null) {
             compassSensorManager.stop();
         }
@@ -310,6 +282,9 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         googleMap.getUiSettings().setCompassEnabled(true);
         googleMap.getUiSettings().setRotateGesturesEnabled(true);
         googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+        // Move zoom controls
+        googleMap.setPadding(0, 0, 30, 650);
 
         addMarkersToMap();
         if (fullRoutePath != null && !fullRoutePath.isEmpty()) {
@@ -343,6 +318,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
             }
         }
     }
+
 
     // Adds start and destination markers to the map
     private void addMarkersToMap() {

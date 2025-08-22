@@ -49,6 +49,8 @@
         <activity android:name=".LocationShowActivity" android:exported="false" />
         <activity android:name=".DestinationActivity" android:exported="false" />
         <activity android:name=".NavigationActivity" android:exported="false" />
+
+        <!-- Profile activities -->
         <activity android:name=".ProfileActivity" android:exported="false" />
 
         <!-- Google Maps API Key -->

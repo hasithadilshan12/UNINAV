@@ -6,13 +6,11 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import com.s92077274.uninav.models.MapPoint;
-import com.s92077274.uninav.models.NavigationRoute;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MapOverlayView extends View {
     private List<MapPoint> mapPoints = new ArrayList<>();
-    private NavigationRoute currentRoute;
     private MapPoint userLocation;
     private Paint markerPaint, routePaint, userLocationPaint, textPaint, textBackgroundPaint;
     private OnMapPointClickListener clickListener;
@@ -60,7 +58,7 @@ public class MapOverlayView extends View {
 
         // Paint for text label background
         textBackgroundPaint = new Paint();
-        textBackgroundPaint.setColor(Color.parseColor("#AA000000"));
+        textBackgroundPaint.setColor(Color.parseColor("#AA000000")); // Semi-transparent black
         textBackgroundPaint.setStyle(Paint.Style.FILL);
         textBackgroundPaint.setAntiAlias(true);
     }
@@ -77,11 +75,11 @@ public class MapOverlayView extends View {
         invalidate(); // Redraw view
     }
 
-    // Sets the navigation route to display
-    public void setRoute(NavigationRoute route) {
-        this.currentRoute = route;
-        invalidate(); // Redraw view
-    }
+    // Removed as NavigationRoute is no longer used
+    // public void setRoute(NavigationRoute route) {
+    //     this.currentRoute = route;
+    //     invalidate(); // Redraw view
+    // }
 
     // Sets the click listener for map points
     public void setOnMapPointClickListener(OnMapPointClickListener listener) {
@@ -92,10 +90,10 @@ public class MapOverlayView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Draw the current route if available
-        if (currentRoute != null && currentRoute.waypoints.size() > 1) {
-            drawRoute(canvas);
-        }
+        // Removed route drawing logic as currentRoute is no longer used
+        // if (currentRoute != null && currentRoute.waypoints.size() > 1) {
+        //     drawRoute(canvas);
+        // }
 
         // Draw markers for all map points (excluding user location)
         for (MapPoint point : mapPoints) {
@@ -110,27 +108,6 @@ public class MapOverlayView extends View {
         }
     }
 
-    // Draws the navigation route on the canvas
-    private void drawRoute(Canvas canvas) {
-        if (currentRoute.waypoints.size() < 2) return;
-
-        Path path = new Path();
-        MapPoint first = currentRoute.waypoints.get(0);
-        float startX = first.x * getWidth();
-        float startY = first.y * getHeight();
-        path.moveTo(startX, startY);
-
-        for (int i = 1; i < currentRoute.waypoints.size(); i++) {
-            MapPoint point = currentRoute.waypoints.get(i);
-            float x = point.x * getWidth();
-            float y = point.y * getHeight();
-            path.lineTo(x, y);
-        }
-
-        canvas.drawPath(path, routePaint);
-    }
-
-    // Draws a single location marker with a label
     private void drawLocationMarker(Canvas canvas, MapPoint point) {
         float x = point.x * getWidth();
         float y = point.y * getHeight();

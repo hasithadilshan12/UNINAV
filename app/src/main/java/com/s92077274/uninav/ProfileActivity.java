@@ -34,9 +34,9 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+// import com.google.firebase.firestore.DocumentReference; // Removed
+// import com.google.firebase.firestore.DocumentSnapshot; // Removed
+// import com.google.firebase.firestore.FirebaseFirestore; // Removed
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -53,7 +53,7 @@ public class ProfileActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 2;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
 
     private Button btnLogout;
     private ImageView btnBack;
@@ -79,7 +79,7 @@ public class ProfileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_profile);
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
 
         initViews();
         setClickListeners();
@@ -139,24 +139,20 @@ public class ProfileActivity extends AppCompatActivity {
     private void fetchUserProfile() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            DocumentReference docRef = db.collection("users").document(user.getUid());
-            docRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        currentUserProfile = new UserProfile(
-                                document.getString("name"),
-                                document.getString("email"),
-                                document.getString("profilePictureBase64")
-                        );
-                    } else {
-                        Toast.makeText(ProfileActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        createDefaultUserProfile(user.getUid(), user.getEmail());
-                    }
-                } else {
-                    Toast.makeText(ProfileActivity.this, "Failed to fetch user data: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
+            // ⭐ MODIFIED: Use FirebaseUserManager to fetch user profile ⭐
+            firebaseUserManager.getUserProfile(user.getUid())
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            if (task.getResult().exists()) {
+                                currentUserProfile = task.getResult().toObject(UserProfile.class); // Deserialize directly
+                            } else {
+                                Toast.makeText(ProfileActivity.this, "User data not found. Creating default profile.", Toast.LENGTH_SHORT).show();
+                                createDefaultUserProfile(user.getUid(), user.getEmail());
+                            }
+                        } else {
+                            Toast.makeText(ProfileActivity.this, "Failed to fetch user data: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
         } else {
             // If no user is logged in, redirect to LoginActivity
             Intent logoutIntent = new Intent(ProfileActivity.this, LoginActivity.class);
@@ -168,12 +164,8 @@ public class ProfileActivity extends AppCompatActivity {
 
     // Creates a default user profile in Firestore if one doesn't exist
     private void createDefaultUserProfile(String uid, String email) {
-        Map<String, Object> user = new HashMap<>();
-        user.put("name", "New User");
-        user.put("email", email);
-        user.put("profilePictureBase64", "");
-
-        db.collection("users").document(uid).set(user)
+        // ⭐ MODIFIED: Use FirebaseUserManager to save new user profile ⭐
+        firebaseUserManager.saveNewUser(uid, email, "New User") // Use saveNewUser to create default
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(ProfileActivity.this, "Default profile created.", Toast.LENGTH_SHORT).show();
                     fetchUserProfile(); // Fetch newly created profile
@@ -310,7 +302,7 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        boolean nameChanged = !newName.equals(currentUserProfile.getName());
+        boolean nameChanged = (currentUserProfile != null && !newName.equals(currentUserProfile.getName()));
         boolean imageSelected = (selectedImageUri != null);
 
         if (!nameChanged && !imageSelected) {
@@ -322,34 +314,34 @@ public class ProfileActivity extends AppCompatActivity {
         Toast.makeText(this, "Saving changes...", Toast.LENGTH_SHORT).show();
 
         if (imageSelected) {
-            new ImageToBase64Task(user.getUid(), newName).execute(selectedImageUri); // Convert and upload image
+            new ImageToBase64Task(user.getUid(), newName, nameChanged).execute(selectedImageUri); // Convert and upload image
         } else {
-            updateNameOnly(user.getUid(), newName); // Update name only
+            if (nameChanged) {
+                // ⭐ MODIFIED: Use FirebaseUserManager to update name only ⭐
+                firebaseUserManager.updateUserName(user.getUid(), newName)
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(ProfileActivity.this, "Name updated successfully!", Toast.LENGTH_SHORT).show();
+                            fetchUserProfile(); // Refresh profile data
+                            if (profileDialog != null) profileDialog.dismiss();
+                        })
+                        .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Failed to update name: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
         }
     }
 
-    // Updates only the user's name in Firestore
-    private void updateNameOnly(String userId, String newName) {
-        DocumentReference userDocRef = db.collection("users").document(userId);
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("name", newName);
-        userDocRef.update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(ProfileActivity.this, "Name updated successfully!", Toast.LENGTH_SHORT).show();
-                    fetchUserProfile(); // Refresh profile data
-                    if (profileDialog != null) profileDialog.dismiss();
-                })
-                .addOnFailureListener(e -> Toast.makeText(ProfileActivity.this, "Failed to update name: " + e.getMessage(), Toast.LENGTH_LONG).show());
-    }
+    // ⭐ REMOVED: updateNameOnly() method is no longer needed, logic moved to FirebaseUserManager ⭐
+
 
     // AsyncTask to convert image URI to Base64 and then update profile
     private class ImageToBase64Task extends AsyncTask<Uri, Void, String> {
         private final String userId;
         private final String newName;
+        private final boolean nameChanged; // Added to indicate if name also needs updating
 
-        ImageToBase64Task(String userId, String newName) {
+        ImageToBase64Task(String userId, String newName, boolean nameChanged) {
             this.userId = userId;
             this.newName = newName;
+            this.nameChanged = nameChanged;
         }
 
         @Override
@@ -358,7 +350,7 @@ public class ProfileActivity extends AppCompatActivity {
             try {
                 InputStream inputStream = getContentResolver().openInputStream(imageUri);
                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                inputStream.close();
+                if (inputStream != null) inputStream.close(); // Close stream after use
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos); // Compress image
@@ -375,13 +367,14 @@ public class ProfileActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String base64Image) {
             if (base64Image != null) {
-                DocumentReference userDocRef = db.collection("users").document(userId);
+                // ⭐ MODIFIED: Use FirebaseUserManager to update profile picture and potentially name ⭐
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("profilePictureBase64", base64Image);
-                if (!newName.equals(currentUserProfile.getName())) {
+                if (nameChanged) {
                     updates.put("name", newName);
                 }
-                userDocRef.update(updates)
+
+                firebaseUserManager.updateProfileField(userId, updates)
                         .addOnSuccessListener(aVoid -> {
                             Toast.makeText(ProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                             fetchUserProfile();
@@ -409,8 +402,8 @@ public class ProfileActivity extends AppCompatActivity {
                 .setMessage("Are you sure you want to delete your profile picture?")
                 .setCancelable(true)
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    DocumentReference userDocRef = db.collection("users").document(user.getUid());
-                    userDocRef.update("profilePictureBase64", "") // Clear the Base64 string
+                    // ⭐ MODIFIED: Use FirebaseUserManager to delete profile picture ⭐
+                    firebaseUserManager.deleteProfilePicture(user.getUid())
                             .addOnSuccessListener(aVoid -> {
                                 Toast.makeText(ProfileActivity.this, "Profile picture deleted.", Toast.LENGTH_SHORT).show();
                                 selectedImageUri = null;

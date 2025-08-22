@@ -8,17 +8,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ImageView;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.util.Base64;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -30,9 +29,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+// import com.google.firebase.firestore.DocumentReference; // Removed
+// import com.google.firebase.firestore.DocumentSnapshot; // Removed
+// import com.google.firebase.firestore.FirebaseFirestore; // Removed
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -57,7 +56,7 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<MapPoint> recentSearchesList;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
 
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_RECENT_SEARCHES = "recent_searches";
@@ -71,7 +70,7 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_home);
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
 
         initViews();
         loadRecentSearches();
@@ -161,35 +160,36 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void fetchAndDisplayUserProfilePicture() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            DocumentReference docRef = db.collection("users").document(user.getUid());
-            docRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful() && task.getResult().exists()) {
-                    String base64Image = task.getResult().getString("profilePictureBase64");
+            // ⭐ MODIFIED: Use FirebaseUserManager to fetch user profile ⭐
+            firebaseUserManager.getUserProfile(user.getUid())
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult().exists()) {
+                            String base64Image = task.getResult().getString("profilePictureBase64");
 
-                    if (base64Image != null && !base64Image.isEmpty()) {
-                        try {
-                            byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
-                            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                            if (base64Image != null && !base64Image.isEmpty()) {
+                                try {
+                                    byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
 
-                            if (bitmap != null) {
-                                ivProfile.setImageBitmap(bitmap);
+                                    if (bitmap != null) {
+                                        ivProfile.setImageBitmap(bitmap);
+                                    } else {
+                                        Log.e("HomeActivity", "Bitmap decode returned null.");
+                                        ivProfile.setImageResource(R.drawable.ic_profile);
+                                    }
+                                } catch (Exception e) {
+                                    Log.e("HomeActivity", "Error decoding Base64 image", e);
+                                    ivProfile.setImageResource(R.drawable.ic_profile);
+                                }
                             } else {
-                                Log.e("HomeActivity", "Bitmap decode returned null.");
+                                Log.d("HomeActivity", "No profile picture set.");
                                 ivProfile.setImageResource(R.drawable.ic_profile);
                             }
-                        } catch (Exception e) {
-                            Log.e("HomeActivity", "Error decoding Base64 image", e);
+                        } else {
+                            Log.e("HomeActivity", "Failed to fetch document", task.getException());
                             ivProfile.setImageResource(R.drawable.ic_profile);
                         }
-                    } else {
-                        Log.d("HomeActivity", "No profile picture set.");
-                        ivProfile.setImageResource(R.drawable.ic_profile);
-                    }
-                } else {
-                    Log.e("HomeActivity", "Failed to fetch document", task.getException());
-                    ivProfile.setImageResource(R.drawable.ic_profile);
-                }
-            });
+                    });
         }
     }
 

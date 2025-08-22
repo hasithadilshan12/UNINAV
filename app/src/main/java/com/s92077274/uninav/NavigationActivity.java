@@ -14,7 +14,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-import android.view.animation.RotateAnimation;
+// import android.view.animation.RotateAnimation; // Removed - now handled by CompassSensorManager
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -22,10 +22,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
+// Removed direct sensor imports - now handled by CompassSensorManager
+// import android.hardware.Sensor;
+// import android.hardware.SensorEvent;
+// import android.hardware.SensorEventListener;
+// import android.hardware.SensorManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -54,7 +55,8 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class NavigationActivity extends AppCompatActivity implements OnMapReadyCallback, SensorEventListener {
+// Removed SensorEventListener interface from NavigationActivity
+public class NavigationActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
@@ -90,11 +92,10 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_MAP_TYPE = "map_type";
 
-    // Compass sensor fields
-    private SensorManager sensorManager;
-    private Sensor accelerometer, magnetometer;
-    private float[] gravityValues, geomagneticValues;
-    private float currentCompassDegree = 0f;
+    // ⭐ NEW: Instance of our custom CompassSensorManager ⭐
+    private CompassSensorManager compassSensorManager;
+    // float currentCompassDegree removed - now managed by CompassSensorManager internally
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,21 +108,25 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         retrieveIntentData();
         setClickListeners();
 
-        // Initialize compass sensors
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-            if (accelerometer == null || magnetometer == null) {
-                Log.w("NavigationActivity", "Accelerometer or Magnetometer not found. Compass UI features disabled.");
-                Toast.makeText(this, "Compass UI features unavailable on this device.", Toast.LENGTH_LONG).show();
-            } else {
-                Log.d("NavigationActivity", "Accelerometer and Magnetometer sensors initialized for compass UI.");
-            }
-        } else {
-            Log.e("NavigationActivity", "SensorManager not found. Device sensors may not be available. Compass UI disabled.");
-            Toast.makeText(this, "Device sensors unavailable for compass UI.", Toast.LENGTH_LONG).show();
-        }
+        // ⭐ MODIFIED: Initialize CompassSensorManager ⭐
+        // Pass the ImageView that needs to be rotated
+        compassSensorManager = new CompassSensorManager(this, ivCompassNav, degrees -> {
+            // Optional: If NavigationActivity needs to do something else with the heading besides rotating the ImageView,
+            // you can implement it here.
+            // Example: Log.d("NavigationActivity", "Compass Heading: " + degrees);
+            // If you want to rotate the map camera with the compass:
+            // if (googleMap != null && lastKnownLocation != null) {
+            //     googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
+            //             new com.google.android.gms.maps.model.CameraPosition.Builder()
+            //                     .target(lastKnownLocation)
+            //                     .zoom(googleMap.getCameraPosition().zoom)
+            //                     .bearing(degrees) // Orient map to device's current heading
+            //                     .tilt(0)
+            //                     .build()
+            //     ));
+            // }
+        });
+
 
         // Initialize Google Map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -198,24 +203,25 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         });
 
         // Click listener for compass to orient map North
-        if (ivCompassNav != null) {
+        if (ivCompassNav != null && compassSensorManager != null) { // ⭐ MODIFIED: Check if compassSensorManager is available ⭐
             ivCompassNav.setOnClickListener(v -> {
                 if (googleMap != null && lastKnownLocation != null) {
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(lastKnownLocation, googleMap.getCameraPosition().zoom));
+                    float targetBearing = compassSensorManager.getLastHeadingDegrees(); // Get device's current heading
                     googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(
                             new com.google.android.gms.maps.model.CameraPosition.Builder()
                                     .target(lastKnownLocation)
                                     .zoom(googleMap.getCameraPosition().zoom)
-                                    .bearing(0)
+                                    .bearing(targetBearing) // Orient map to device's current heading
                                     .tilt(0)
                                     .build()
                     ));
-                    Toast.makeText(this, "Map oriented North", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Map oriented to device heading", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "Current location not available to orient map.", Toast.LENGTH_SHORT).show();
                 }
             });
         }
+
 
         btnReCenter.setOnClickListener(v -> {
             if (googleMap == null) {
@@ -239,47 +245,9 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         });
     }
 
-    // Called when sensor values change to update compass rotation
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            gravityValues = event.values.clone();
-        }
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-            geomagneticValues = event.values.clone();
-        }
+    // ⭐ REMOVED: onSensorChanged and onAccuracyChanged are no longer implemented directly here ⭐
+    // The CompassSensorManager handles these internally.
 
-        if (gravityValues != null && geomagneticValues != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-            if (SensorManager.getRotationMatrix(R, I, gravityValues, geomagneticValues)) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-
-                float azimuthInDeg = (float) Math.toDegrees(orientation[0]);
-                azimuthInDeg = (azimuthInDeg + 360) % 360;
-
-                if (ivCompassNav != null) {
-                    RotateAnimation ra = new RotateAnimation(
-                            currentCompassDegree,
-                            -azimuthInDeg,
-                            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
-                            RotateAnimation.RELATIVE_TO_SELF, 0.5f);
-
-                    ra.setDuration(250);
-                    ra.setFillAfter(true);
-                    ivCompassNav.startAnimation(ra);
-                    currentCompassDegree = -azimuthInDeg;
-                }
-            }
-        }
-    }
-
-    // Called when sensor accuracy changes
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d("NavigationActivity", "Sensor accuracy changed for " + sensor.getName() + ": " + accuracy);
-    }
 
     @Override
     protected void onResume() {
@@ -290,11 +258,9 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
             googleMap.setMapType(mapType);
         }
 
-        // Register sensor listeners
-        if (sensorManager != null) {
-            if (accelerometer != null) sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-            if (magnetometer != null) sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
-            Log.d("NavigationActivity", "Sensor listeners registered in onResume.");
+        // ⭐ MODIFIED: Start the custom CompassSensorManager ⭐
+        if (compassSensorManager != null) {
+            compassSensorManager.start();
         }
 
         // Restart live location or simulation if applicable
@@ -317,10 +283,9 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     protected void onPause() {
         super.onPause();
-        // Unregister sensor listeners
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-            Log.d("NavigationActivity", "Sensor listeners unregistered in onPause.");
+        // ⭐ MODIFIED: Stop the custom CompassSensorManager ⭐
+        if (compassSensorManager != null) {
+            compassSensorManager.stop();
         }
 
         stopNavigation();

@@ -97,17 +97,17 @@ public class AppPaths {
 
 
         // Define custom routes and add their reverse
-        List<LatLng> mainEntranceToITDivision = Arrays.asList(
+        List<LatLng> mainEntranceToStudentInformationCenter = Arrays.asList(
                 new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
                 new LatLng(6.882894376548958f, 79.88676273457729f),
                 new LatLng(6.882948416062589, 79.88664323549267),
-                new LatLng(6.883202720886669, 79.8866653637168),
-                new LatLng(6.883198060851902, 79.88658959131538),
-                new LatLng(predefinedMapPoints.get("Information Technology Division").x, predefinedMapPoints.get("Information Technology Division").y)
+                new LatLng(6.883008617767714, 79.88665208898998),
+                new LatLng(6.883014159516421, 79.88658111812254),
+                new LatLng(predefinedMapPoints.get("Student Information Center").x, predefinedMapPoints.get("Student Information Center").y)
         );
-        String keyME_IT = "Main Entrance_To_Information Technology Division";
-        campusRoutes.put(keyME_IT, mainEntranceToITDivision);
-        addReverseRoute(keyME_IT, mainEntranceToITDivision);
+        String keyME_IT = "Main Entrance_To_Student Information Center";
+        campusRoutes.put(keyME_IT, mainEntranceToStudentInformationCenter);
+        addReverseRoute(keyME_IT, mainEntranceToStudentInformationCenter);
 
         List<LatLng> mainEntranceToStudentRegistrationOffice = Arrays.asList(
                 new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
@@ -133,6 +133,19 @@ public class AppPaths {
         campusRoutes.put(keyME_CRC, mainEntranceToCrcOffice);
         addReverseRoute(keyME_CRC, mainEntranceToCrcOffice);
 
+        List<LatLng> mainEntranceToPublicInformationOfficeFinancialOffice = Arrays.asList(
+                new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
+                new LatLng(6.882894376548958f, 79.88676273457729f),
+                new LatLng(6.882948416062589, 79.88664323549267),
+                new LatLng(6.883345079712944, 79.88668239686629),
+                new LatLng(6.8833573953295595, 79.88665082042841),
+                new LatLng(predefinedMapPoints.get("Public Information Office ,Financial Office").x, predefinedMapPoints.get("Public Information Office ,Financial Office").y)
+        );
+
+        String keyME_PIO = "Main Entrance_To_Public Information Office ,Financial Office";
+        campusRoutes.put(keyME_PIO, mainEntranceToPublicInformationOfficeFinancialOffice);
+        addReverseRoute(keyME_PIO, mainEntranceToPublicInformationOfficeFinancialOffice);
+
         List<LatLng> establishmentsDivisionToMainEntrance = Arrays.asList(
                 new LatLng(predefinedMapPoints.get("Establishments Division").x, predefinedMapPoints.get("Establishments Division").y),
                 new LatLng(6.887598897774366f, 79.8819837574954f),
@@ -157,10 +170,20 @@ public class AppPaths {
 
         List<LatLng> establishmentsDivisionToCrcOffice = Arrays.asList(
                 new LatLng(predefinedMapPoints.get("Establishments Division").x, predefinedMapPoints.get("Establishments Division").y),
-                new LatLng(6.887500f, 79.881900f),
-                new LatLng(6.887000f, 79.881500f),
-                new LatLng(6.886000f, 79.881000f),
-                new LatLng(6.883500f, 79.886000f),
+                new LatLng(6.887598897774366f, 79.8819837574954f),
+                new LatLng(6.887684653492381, 79.88201838034811),
+                new LatLng(6.887763827632987, 79.88177903270578),
+                new LatLng(6.887311621305996, 79.88151534385746),
+                new LatLng(6.886961842794369, 79.88225372937637),
+                new LatLng(6.886659961290986, 79.88219762631564),
+                new LatLng(6.886209993556812, 79.88270514922014),
+                new LatLng(6.885586883875528, 79.88291167930909),
+                new LatLng(6.883619743202517, 79.88341828572773),
+                new LatLng(6.883608445566548, 79.88443486769717),
+                new LatLng(6.883883354255399, 79.88449176594021),
+                new LatLng(6.8836084455726425, 79.88669562459177),
+                new LatLng(6.883474209061779, 79.88669312084247),
+                new LatLng(6.883469533390325, 79.8866590614989),
                 new LatLng(predefinedMapPoints.get("CRC Office").x, predefinedMapPoints.get("CRC Office").y)
         );
         String keyED_CRC = "Establishments Division_To_CRC Office";
@@ -189,7 +212,59 @@ public class AppPaths {
         String keyED_FHSS = "Establishments Division_To_Faculty of Humanities and Social Sciences";
         campusRoutes.put(keyED_FHSS, establishmentsDivisionToFacultyOfHumanitiesAndSocialSciences);
         addReverseRoute(keyED_FHSS, establishmentsDivisionToFacultyOfHumanitiesAndSocialSciences);
+
+        List<LatLng> mainEntranceToLibrary = Arrays.asList(
+                new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
+                new LatLng(6.882894376548958f, 79.88676273457729f),
+                new LatLng(6.882948416062589, 79.88664323549267),
+                new LatLng(6.8835878481437485, 79.88670114839948),
+                new LatLng(6.883899968569014, 79.88449070720179),
+                new LatLng(6.883618611379107, 79.88443020632579),
+                new LatLng(6.88360884843643, 79.88420423876306),
+                new LatLng(6.886213480539401, 79.88271566433535),
+                new LatLng(6.886341603335691f, 79.88289203571986f),
+                new LatLng(predefinedMapPoints.get("Library").x, predefinedMapPoints.get("Library").y)
+        );
+        String keyME_Library = "Main Entrance_To_Library";
+        campusRoutes.put(keyME_Library, mainEntranceToLibrary);
+        addReverseRoute(keyME_Library, mainEntranceToLibrary);
+
+        List<LatLng> mainEntranceToExamHall01 = Arrays.asList(
+                new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
+                new LatLng(6.882894376548958f, 79.88676273457729f),
+                new LatLng(6.882948416062589, 79.88664323549267),
+                new LatLng(6.8835878481437485, 79.88670114839948),
+                new LatLng(6.883899968569014, 79.88449070720179),
+                new LatLng(6.883618611379107, 79.88443020632579),
+                new LatLng(6.88360884843643, 79.88420198330321),
+                new LatLng(6.883687312124374f, 79.88422086399399f),
+                new LatLng(predefinedMapPoints.get("Exam Hall 01").x, predefinedMapPoints.get("Exam Hall 01").y)
+        );
+        String keyME_EH01 = "Main Entrance_To_Exam Hall 01";
+        campusRoutes.put(keyME_EH01, mainEntranceToExamHall01);
+        addReverseRoute(keyME_EH01, mainEntranceToExamHall01);
+
+        List<LatLng> mainEntranceToPlayGround = Arrays.asList(
+                new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
+                new LatLng(6.882894376548958f, 79.88676273457729f),
+                new LatLng(6.882948416062589, 79.88664323549267),
+                new LatLng(6.8835878481437485, 79.88670114839948),
+                new LatLng(6.883899968569014, 79.88449070720179),
+                new LatLng(6.883618611379107, 79.88443020632579),
+                new LatLng(6.883615249846182, 79.88341117636902),
+                new LatLng(6.885579027210578, 79.88291319061524),
+                new LatLng(6.8866784505059, 79.88219264866835),
+                new LatLng(6.886950061910049, 79.8822462928295),
+                new LatLng(6.887525238449621, 79.8810500276603),
+                new LatLng(6.887845887661954f, 79.88130502150541f),
+                new LatLng(predefinedMapPoints.get("Play Ground").x, predefinedMapPoints.get("Play Ground").y)
+        );
+        String keyME_Playground = "Main Entrance_To_Play Ground";
+        campusRoutes.put(keyME_Playground, mainEntranceToPlayGround);
+        addReverseRoute(keyME_Playground, mainEntranceToPlayGround);
     }
+
+
 
     // Adds a reverse route to allow bidirectional navigation
     private static void addReverseRoute(String originalRouteKey, List<LatLng> originalPath) {

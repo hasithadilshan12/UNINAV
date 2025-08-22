@@ -20,7 +20,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+// import com.google.firebase.firestore.FirebaseFirestore; // Removed - now handled by FirebaseUserManager
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +33,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView tvLogin;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private FirebaseUserManager firebaseUserManager; // ⭐ NEW: Instance of our custom manager ⭐
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,10 +41,9 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        firebaseUserManager = FirebaseUserManager.getInstance(); // ⭐ Initialize our custom manager ⭐
 
         initViews();
-
         setClickListeners();
     }
 
@@ -127,8 +126,31 @@ public class RegisterActivity extends AppCompatActivity {
                             // Registration successful
                             FirebaseUser user = mAuth.getCurrentUser();
                             if (user != null) {
-                                // Save user details to Firestore
-                                saveUserToFirestore(user.getUid(), email, name);
+                                // ⭐ MODIFIED: Use FirebaseUserManager to save user details to Firestore ⭐
+                                firebaseUserManager.saveNewUser(user.getUid(), email, name)
+                                        .addOnSuccessListener(aVoid -> {
+                                            // User data saved successfully, sign out and navigate to login
+                                            mAuth.signOut();
+                                            progressBarRegister.setVisibility(View.GONE);
+                                            btnRegister.setEnabled(true);
+                                            Toast.makeText(RegisterActivity.this,
+                                                    "Registration successful! Please log in.",
+                                                    Toast.LENGTH_LONG).show();
+
+                                            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                                            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                                            startActivity(intent);
+                                            finish();
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            // Error saving user data, sign out and show error
+                                            mAuth.signOut(); // Sign out the newly created auth user as profile save failed
+                                            progressBarRegister.setVisibility(View.GONE);
+                                            btnRegister.setEnabled(true);
+                                            Toast.makeText(RegisterActivity.this,
+                                                    "Error saving user data: " + e.getMessage() + ". Please try again.",
+                                                    Toast.LENGTH_LONG).show();
+                                        });
                             }
                         } else {
                             // Registration failed
@@ -142,51 +164,8 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-    // Saves user data to Firestore
-    private void saveUserToFirestore(String userId, String email, String name) {
-        Map<String, Object> user = new HashMap<>();
-        user.put("email", email);
-        user.put("name", name);
-        user.put("userId", userId);
-        user.put("registrationDate", System.currentTimeMillis());
-        user.put("isActive", true);
-        user.put("profilePictureBase64", ""); // Initialize with empty string for profile picture
+    // ⭐ REMOVED: saveUserToFirestore() method is no longer needed, logic moved to FirebaseUserManager ⭐
 
-        db.collection("users").document(userId)
-                .set(user)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        // User data saved successfully, sign out and navigate to login
-                        mAuth.signOut();
-
-                        progressBarRegister.setVisibility(View.GONE);
-                        btnRegister.setEnabled(true);
-
-                        Toast.makeText(RegisterActivity.this,
-                                "Registration successful! Please log in.",
-                                Toast.LENGTH_LONG).show();
-
-                        Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                        startActivity(intent);
-                        finish();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        // Error saving user data, sign out and show error
-                        mAuth.signOut();
-                        progressBarRegister.setVisibility(View.GONE);
-                        btnRegister.setEnabled(true);
-
-                        Toast.makeText(RegisterActivity.this,
-                                "Error saving user data: " + e.getMessage() + ". Please try again.",
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
-    }
 
     @Override
     public void onBackPressed() {

@@ -20,7 +20,7 @@ public class AppPaths {
     private static final Map<String, List<LatLng>> campusRoutes = new HashMap<>();
 
     static {
-        // Initialize known MapPoints
+        // Initialized known MapPoints
         predefinedMapPoints.put("Public Information Office ,Financial Office", new MapPoint("Public Information Office ,Financial Office", "Financial Office", 6.883387838930316f, 79.88654971785698f, "facilities"));
         predefinedMapPoints.put("Library", new MapPoint("Library", "Central Library", 6.886341603335691f, 79.88289203571986f, "academic"));
         predefinedMapPoints.put("CRC Office", new MapPoint("CRC Office", "Colombo regional Center", 6.88347942072658f, 79.88664655562894f, "office"));
@@ -96,7 +96,7 @@ public class AppPaths {
         predefinedMapPoints.put("TRF Hostel", new MapPoint("TRF Hostel", "TRF Hostel (Open University Sri Lanka )", 6.888365114969738f, 79.8793654415212f, "Facilities"));
 
 
-        // Define custom routes and add their reverse
+        // Defined custom routes and added their reverse
         List<LatLng> mainEntranceToStudentInformationCenter = Arrays.asList(
                 new LatLng(predefinedMapPoints.get("Main Entrance").x, predefinedMapPoints.get("Main Entrance").y),
                 new LatLng(6.882894376548958f, 79.88676273457729f),

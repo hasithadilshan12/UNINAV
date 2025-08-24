@@ -200,7 +200,7 @@ public class DestinationActivity extends AppCompatActivity implements OnMapReady
         Log.d("DestinationActivity", "Applied map type: " + (mapType == GoogleMap.MAP_TYPE_NORMAL ? "Normal" : "Satellite"));
 
         googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.getUiSettings().setCompassEnabled(true);
+        googleMap.setPadding(0, 0, 30, 150);
 
         if (isLiveLocationStart) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {

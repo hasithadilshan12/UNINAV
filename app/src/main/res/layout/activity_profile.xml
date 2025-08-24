@@ -39,7 +39,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Main Content Area (Scrollable) -->
+    <!-- Main Content Area -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"

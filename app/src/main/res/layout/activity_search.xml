@@ -16,7 +16,7 @@
         android:contentDescription="Back button"
         android:background="?selectableItemBackgroundBorderless"
         android:padding="8dp"
-        app:tint="#1565C0"
+        app:tint="#000000"
         android:clickable="true"
         android:focusable="true" />
 
@@ -57,7 +57,7 @@
             android:src="@drawable/ic_search"
             android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="Search button"
-            app:tint="#1565C0" />
+            app:tint="#000000" />
     </LinearLayout>
 
     <!-- Results List-->

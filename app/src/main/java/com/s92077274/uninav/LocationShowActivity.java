@@ -116,7 +116,7 @@ public class LocationShowActivity extends AppCompatActivity implements OnMapRead
 
         // Configure map UI settings
         googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.getUiSettings().setCompassEnabled(true);
+        googleMap.setPadding(0, 0, 30, 450);
 
         // Add marker for the shown location
         if (shownLocation != null) {

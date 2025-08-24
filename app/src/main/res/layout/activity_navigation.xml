@@ -11,7 +11,10 @@
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_marginBottom="48dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentTop="true" />
 
     <!-- Navigation Control and Info Card -->
     <LinearLayout
@@ -55,24 +58,25 @@
     </LinearLayout>
 
     <!--Re-center Button -->
+
+    <!-- Visual Compass ImageView -->
     <ImageView
         android:id="@+id/btnReCenter"
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="110dp"
+        android:layout_marginEnd="17dp"
+        android:layout_marginBottom="61dp"
         android:background="@drawable/fab_background"
-        android:src="@drawable/ic_my_location"
-        android:elevation="20dp"
-        app:tint="#1565C0"
-        android:contentDescription="Re-center map on current location"
         android:clickable="true"
+        android:contentDescription="Re-center map on current location"
+        android:elevation="20dp"
         android:focusable="true"
-        android:padding="16dp" />
+        android:padding="16dp"
+        android:src="@drawable/ic_my_location"
+        app:tint="#1565C0" />
 
-    <!-- Visual Compass ImageView -->
     <ImageView
         android:id="@+id/ivCompassNav"
         android:layout_width="56dp"

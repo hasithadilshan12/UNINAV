@@ -34,11 +34,9 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 import com.s92077274.uninav.models.MapPoint;
 import com.s92077274.uninav.utils.AppPaths;
@@ -84,7 +82,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
     private static final String KEY_MAP_TYPE = "map_type";
 
 
-    private CompassSensorManager compassSensorManager;
+    private AppSensorManager compassSensorManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +96,7 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
         setClickListeners();
 
         // Pass the ImageView that needs to be rotated
-        compassSensorManager = new CompassSensorManager(this, ivCompassNav, degrees -> {
+        compassSensorManager = new AppSensorManager(this, ivCompassNav, degrees -> {
         });
 
 
@@ -279,12 +277,10 @@ public class NavigationActivity extends AppCompatActivity implements OnMapReadyC
 
         // Configure map UI settings
         googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.getUiSettings().setCompassEnabled(true);
-        googleMap.getUiSettings().setRotateGesturesEnabled(true);
         googleMap.getUiSettings().setMyLocationButtonEnabled(true);
 
         // Move zoom controls
-        googleMap.setPadding(0, 0, 30, 650);
+        googleMap.setPadding(0, 0, 30, 350);
 
         addMarkersToMap();
         if (fullRoutePath != null && !fullRoutePath.isEmpty()) {

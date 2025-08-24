@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.UNINAV" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
@@ -14,15 +13,12 @@
         <item name="android:windowMinWidthMinor">90%</item>
     </style>
 
-    <!-- NEW: Dark Theme for AppCompatDelegate (for Dark Mode toggle) -->
-    <!-- Note: If your Base.Theme.UNINAV already handles DayNight, this might be redundant
-               or need adjustment. This is for explicit switching with AppCompatDelegate. -->
     <style name="Theme.UniNav.DayNight" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Inherit from your base theme or define dark mode specific attributes -->
+
         <item name="android:windowBackground">#1C1C1E</item> <!-- Dark background color -->
         <item name="android:textColorPrimary">@android:color/white</item>
         <item name="android:textColorSecondary">#CCCCCC</item>
-        <!-- Add other dark mode colors/styles as needed -->
+
     </style>
 
 </resources>

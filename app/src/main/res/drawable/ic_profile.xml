@@ -3,9 +3,9 @@
     android:width="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24"
-    android:tint="#000000"> <!-- This tint property will be overridden by app:tint in your ImageView -->
+    android:tint="#FFFFFF"> <!-- This tint property will be overridden by app:tint in your ImageView -->
     <!-- Path for a standard human profile icon, filled with black -->
     <path
-        android:fillColor="#FF000000"
+        android:fillColor="#000000"
         android:pathData="M12,12c2.21,0 4,-1.79 4,-4s-1.79,-4 -4,-4 -4,1.79 -4,4 1.79,4 4,4zM12,14c-2.67,0 -8,1.34 -8,4v2h16v-2c0,-2.66 -5.33,-4 -8,-4z"/>
 </vector>

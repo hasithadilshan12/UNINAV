@@ -11,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.text.Editable;
@@ -37,7 +36,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.bumptech.glide.Glide;
 import com.s92077274.uninav.utils.ImageUtils;
@@ -72,7 +70,7 @@ public class MapActivity extends AppCompatActivity implements
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_MAP_TYPE = "map_type";
 
-    private CompassSensorManager compassSensorManager;
+    private AppSensorManager compassSensorManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +84,8 @@ public class MapActivity extends AppCompatActivity implements
         setClickListeners();
 
         // Initialize CompassSensorManager and pass the ImageView to be rotated
-        compassSensorManager = new CompassSensorManager(this, ivCompass, degrees -> {
-            // Optional: Heading change listener can be implemented here
+        compassSensorManager = new AppSensorManager(this, ivCompass, degrees -> {
+
         });
 
         // Set up map fragment
@@ -233,12 +231,10 @@ public class MapActivity extends AppCompatActivity implements
 
         // Configure map UI settings
         googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.getUiSettings().setCompassEnabled(true);
-        googleMap.getUiSettings().setRotateGesturesEnabled(true);
         googleMap.getUiSettings().setMyLocationButtonEnabled(true);
 
         // Move zoom controls higher
-        googleMap.setPadding(0, 0, 30, 650);
+        googleMap.setPadding(0, 0, 30, 550);
 
         // Set up map interactions
         googleMap.setOnMarkerClickListener(this);

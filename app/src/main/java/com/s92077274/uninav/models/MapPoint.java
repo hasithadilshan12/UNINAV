@@ -8,7 +8,7 @@ public class MapPoint {
     public float x; // Latitude
     public float y; // Longitude
     public String category;
-    public boolean isUserLocation;
+    public boolean isUserLocation;//user’s location
 
     // Primary constructor for a map point
     public MapPoint(String name, String description, float x, float y, String category) {
@@ -25,7 +25,7 @@ public class MapPoint {
         this(name, "", x, y, "general");
     }
 
-    // Default constructor
+    // Default constructor(empty map points)
     public MapPoint() {
     }
 

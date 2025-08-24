@@ -37,10 +37,12 @@ import com.s92077274.uninav.models.MapPoint;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * HomeActivity displays the main dashboard of the UniNav app,
- * including recent searches, a mini-map, and navigation options.
+ * including recent searches, a mini-map, navigation options,
+ * and now integrates a light sensor for ambient light detection.
  */
 public class HomeActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -56,7 +58,7 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<MapPoint> recentSearchesList;
 
     private FirebaseAuth mAuth;
-    private FirebaseUserManager firebaseUserManager; // Manages Firebase Firestore user data
+    private FirebaseUserManager firebaseUserManager;
 
     private static final String PREFS_NAME = "UniNavPrefs";
     private static final String KEY_RECENT_SEARCHES = "recent_searches";
@@ -64,13 +66,17 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String TAG = "HomeActivity";
     private static final String KEY_MAP_TYPE = "map_type";
 
+    private AppSensorManager appSensorManager;
+    private long lastLightToastTime = 0;
+    private static final long MIN_TOAST_INTERVAL = 3000; // 3 seconds
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
         mAuth = FirebaseAuth.getInstance();
-        firebaseUserManager = FirebaseUserManager.getInstance(); // Initialize Firebase user manager
+        firebaseUserManager = FirebaseUserManager.getInstance();
 
         initViews();
         loadRecentSearches();
@@ -90,7 +96,50 @@ public class HomeActivity extends AppCompatActivity implements OnMapReadyCallbac
         loadRecentSearches();
         updateRecentSearchesUI();
         applyMapTypeSetting();
-        fetchAndDisplayUserProfilePicture(); // Fetch and display the user's profile picture
+        fetchAndDisplayUserProfilePicture();
+
+        // Initialize sensor manager if needed
+        if (appSensorManager == null) {
+            appSensorManager = new AppSensorManager(this, new AppSensorManager.OnLightChangeListener() {
+                @Override
+                public void onLightChanged(float lux, String advice) {
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastLightToastTime > MIN_TOAST_INTERVAL) {
+                        String message = String.format(Locale.getDefault(), "Light: %.2f lux. %s", lux, advice);
+                        Toast.makeText(HomeActivity.this, message, Toast.LENGTH_LONG).show();
+                        Log.d(TAG, message);
+                        lastLightToastTime = currentTime;
+                    }
+                }
+            });
+        }
+
+        // Start sensor updates
+        if (appSensorManager != null) {
+            appSensorManager.start();
+        } else {
+            Log.w(TAG, "Light sensor not available on this device");
+            Toast.makeText(this, "Light sensor not available", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop light sensor updates on pause to save battery
+        if (appSensorManager != null) {
+            appSensorManager.stop();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up sensor manager to prevent memory leaks
+        if (appSensorManager != null) {
+            appSensorManager.stop();
+            appSensorManager = null;
+        }
     }
 
     /**
